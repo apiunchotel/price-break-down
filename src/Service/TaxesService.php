@@ -40,6 +40,8 @@ class TaxesService
             'ttc' => $ttc,
             'ht' => $ht,
             'sale' => $sale,
+            'totalExc' => $details[$exc],
+            'totalInc' => $details[$inc],
         ];
     }
 
