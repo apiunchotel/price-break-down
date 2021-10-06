@@ -1,0 +1,8 @@
+
+### core ###
+/composer.lock
+/vendor
+###< core ###
+/.idea
+/nbproject/
+/coverage/
