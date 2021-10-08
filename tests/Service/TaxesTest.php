@@ -55,6 +55,16 @@ class TaxesTest extends TestCase
     /**
      * @dataProvider taxesPriceHtProvider
      */
+    public function testPriceHTFromPriceTTC($priceHT, $nbPerson, $nbDays, $valueTTC, $valueSale, $totalExc, $totalInc, $taxes): void
+    {
+        $tx = new TaxesService();
+        $result = $tx->getPriceHTFromPriceTTC($valueTTC, $taxes, $nbPerson, $nbDays);
+        $this->assertEquals($result, $priceHT, "HT: Failed asserting that {$priceHT} matches expected {$result}.");
+    }
+
+    /**
+     * @dataProvider taxesPriceHtProvider
+     */
     public function testDetailPricesFromPriceSale($priceHT, $nbPerson, $nbDays, $valueTTC, $valueSale, $totalExc, $totalInc, $taxes): void
     {
         $tx = new TaxesService();
@@ -64,19 +74,21 @@ class TaxesTest extends TestCase
         $this->assertEquals($result["priceSale"], $valueSale, "Sale: Failed asserting that {$valueSale} matches expected {$result["priceSale"]}.");
         $this->assertEquals($result["totalTaxExc"], $totalExc, "TotalExc: Failed asserting that {$totalExc} matches expected {$result["totalTaxExc"]}.");
         $this->assertEquals($result["totalTaxInc"], $totalInc, "TotalInc: Failed asserting that {$totalInc} matches expected {$result["totalTaxInc"]}.");
-//        dump($result);
     }
 
-//    public function testTaxeFromTTC($priceHT, $nbPerson, $nbDays, $valueTTC, $valueSale, $totalExc, $totalInc, $taxes): void
-//    {
-//        $tx = new TaxesService();
-//        $result = $tx->getTaxeFromTTC($valueTTC, $taxes, $nbPerson, $nbDays);
-//        $this->assertEquals($result["priceTTC"], $valueTTC, "TTC: Failed asserting that {$valueTTC} matches expected {$result["priceTTC"]}.");
-//        $this->assertEquals($result["priceHT"], $priceHT, "HT: Failed asserting that {$priceHT} matches expected {$result["priceHT"]}.");
-//        $this->assertEquals($result["priceSale"], $valueSale, "Sale: Failed asserting that {$valueSale} matches expected {$result["priceSale"]}.");
-//        $this->assertEquals($result["totalTaxExc"], $totalExc, "TotalExc: Failed asserting that {$totalExc} matches expected {$result["totalTaxExc"]}.");
-//        $this->assertEquals($result["totalTaxInc"], $totalInc, "TotalInc: Failed asserting that {$totalInc} matches expected {$result["totalTaxInc"]}.");
-//    }
+    /**
+     * @dataProvider taxesPriceHtProvider
+     */
+    public function testDetailPricesFromPriceTTC($priceHT, $nbPerson, $nbDays, $valueTTC, $valueSale, $totalExc, $totalInc, $taxes): void
+    {
+        $tx = new TaxesService();
+        $result = $tx->getDetailPricesFromPriceTTC($valueTTC, $taxes, $nbPerson, $nbDays);
+        $this->assertEquals($result["priceTTC"], $valueTTC, "TTC: Failed asserting that {$valueTTC} matches expected {$result["priceTTC"]}.");
+        $this->assertEquals($result["priceHT"], $priceHT, "HT: Failed asserting that {$priceHT} matches expected {$result["priceHT"]}.");
+        $this->assertEquals($result["priceSale"], $valueSale, "Sale: Failed asserting that {$valueSale} matches expected {$result["priceSale"]}.");
+        $this->assertEquals($result["totalTaxExc"], $totalExc, "TotalExc: Failed asserting that {$totalExc} matches expected {$result["totalTaxExc"]}.");
+        $this->assertEquals($result["totalTaxInc"], $totalInc, "TotalInc: Failed asserting that {$totalInc} matches expected {$result["totalTaxInc"]}.");
+    }
 
     public function taxesPriceHtProvider(): array
     {

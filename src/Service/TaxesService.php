@@ -51,12 +51,39 @@ class TaxesService
 
     public function getPriceHTFromPriceSale(float $priceSale, array $taxes, int $nbPerson, int $nbDays): float
     {
+        return $this->_getPriceHT(false, $priceSale, $taxes, $nbPerson, $nbDays);
+    }
+
+    public function getDetailPricesFromPriceSale(float $priceSale, array $taxes, int $nbPerson, int $nbDays): array
+    {
+        $prixHt = $this->_getPriceHT(false, $priceSale, $taxes, $nbPerson, $nbDays);
+        return $this->getDetailPricesFromPriceHT($prixHt, $taxes, $nbPerson, $nbDays);
+    }
+
+    public function getDetailPricesFromPriceTTC(float $priceTTC, array $taxes, int $nbPerson, int $nbDays): array
+    {
+        $prixHt = $this->_getPriceHT(true, $priceTTC, $taxes, $nbPerson, $nbDays);
+        return $this->getDetailPricesFromPriceHT($prixHt, $taxes, $nbPerson, $nbDays);
+    }
+
+    public function getPriceHTFromPriceTTC(float $priceTTC, array $taxes, int $nbPerson, int $nbDays): float
+    {
+        return $this->_getPriceHT(true, $priceTTC, $taxes, $nbPerson, $nbDays);
+    }
+
+    public function convertToObject(array $taxe): TaxeDetail
+    {
+        return $this->copyTo((object) $taxe, TaxeDetail::class);
+    }
+
+    private function _getPriceHT(bool $isPriceTTC, float $priceTTC, array $taxes, int $nbPerson, int $nbDays): float
+    {
         $taxeFixe = 0;
         $chiffreTaxePoucentage = 0;
         foreach ($taxes as $taxe) {
             $detail = $this->convertToObject($taxe, TaxeDetail::class);
-            if ($detail->getTxInc()) {
-                $taxNbrOcc = $this->getTaxNbrOcc($detail->getTxFormule(), $nbPerson, $nbDays);
+            $taxNbrOcc = $this->getTaxNbrOcc($detail->getTxFormule(), $nbPerson, $nbDays);
+            if ($detail->getTxInc() || $isPriceTTC) {
                 if ($detail->montantIsFix()) {
                     $taxeFixe += $detail->getTxMontant() * $taxNbrOcc;
                 } else {
@@ -65,26 +92,13 @@ class TaxesService
             }
         }
         if ($chiffreTaxePoucentage == 0 && $taxeFixe == 0) {
-            return $priceSale;
+            return $priceTTC;
         }
         if ($chiffreTaxePoucentage == 0 && $taxeFixe > 0) {
-            return $priceSale - $taxeFixe;
+            return $priceTTC - $taxeFixe;
         }
-        //dump("((100 * ($priceSale - $taxeFixe)) / $chiffreTaxePoucentage) / (1 + (100 / $chiffreTaxePoucentage))");
-        $ht = ((100 * ($priceSale - $taxeFixe)) / $chiffreTaxePoucentage) / (1 + (100 / $chiffreTaxePoucentage));
-        //dump("priceSale => $priceSale|HT => $ht");
+        $ht = ((100 * ($priceTTC - $taxeFixe)) / $chiffreTaxePoucentage) / (1 + (100 / $chiffreTaxePoucentage));
         return $ht;
-    }
-
-    public function getDetailPricesFromPriceSale(float $priceSale, array $taxes, int $nbPerson, int $nbDays): array
-    {
-        $prixHt = $this->getPriceHTFromPriceSale($priceSale, $taxes, $nbPerson, $nbDays);
-        return $this->getDetailPricesFromPriceHT($prixHt, $taxes, $nbPerson, $nbDays);
-    }
-
-    public function convertToObject(array $taxe): TaxeDetail
-    {
-        return $this->copyTo((object) $taxe, TaxeDetail::class);
     }
 
     /**
