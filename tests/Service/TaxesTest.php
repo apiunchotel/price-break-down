@@ -31,10 +31,10 @@ class TaxesTest extends TestCase
     /**
      * @dataProvider taxesPriceHtProvider
      */
-    public function testTaxeFromHt($priceHT, $nbPerson, $nbDays, $valueTTC, $valueSale, $totalExc, $totalInc, $taxes): void
+    public function testDetailPricesFromPriceHT($priceHT, $nbPerson, $nbDays, $valueTTC, $valueSale, $totalExc, $totalInc, $taxes): void
     {
         $tx = new TaxesService();
-        $result = $tx->getTaxeFromHt($priceHT, $taxes, $nbPerson, $nbDays);
+        $result = $tx->getDetailPricesFromPriceHT($priceHT, $taxes, $nbPerson, $nbDays);
         $this->assertEquals($result["priceTTC"], $valueTTC, "TTC: Failed asserting that {$valueTTC} matches expected {$result["priceTTC"]}.");
         $this->assertEquals($result["priceHT"], $priceHT, "HT: Failed asserting that {$priceHT} matches expected {$result["priceHT"]}.");
         $this->assertEquals($result["priceSale"], $valueSale, "Sale: Failed asserting that {$valueSale} matches expected {$result["priceSale"]}.");
@@ -45,27 +45,38 @@ class TaxesTest extends TestCase
     /**
      * @dataProvider taxesPriceHtProvider
      */
-    public function testPriceHTFromSale($priceHT, $nbPerson, $nbDays, $valueTTC, $valueSale, $totalExc, $totalInc, $taxes): void
+    public function testPriceHTFromPriceSale($priceHT, $nbPerson, $nbDays, $valueTTC, $valueSale, $totalExc, $totalInc, $taxes): void
     {
         $tx = new TaxesService();
-        $result = $tx->getPriceHTFromSale($valueSale, $taxes, $nbPerson, $nbDays);
+        $result = $tx->getPriceHTFromPriceSale($valueSale, $taxes, $nbPerson, $nbDays);
         $this->assertEquals($result, $priceHT, "HT: Failed asserting that {$priceHT} matches expected {$result}.");
     }
-    
+
     /**
      * @dataProvider taxesPriceHtProvider
      */
-    public function testTaxeFromSale($priceHT, $nbPerson, $nbDays, $valueTTC, $valueSale, $totalExc, $totalInc, $taxes): void
+    public function testDetailPricesFromPriceSale($priceHT, $nbPerson, $nbDays, $valueTTC, $valueSale, $totalExc, $totalInc, $taxes): void
     {
         $tx = new TaxesService();
-        $result = $tx->getTaxeFromSale($valueSale, $taxes, $nbPerson, $nbDays);
+        $result = $tx->getDetailPricesFromPriceSale($valueSale, $taxes, $nbPerson, $nbDays);
         $this->assertEquals($result["priceTTC"], $valueTTC, "TTC: Failed asserting that {$valueTTC} matches expected {$result["priceTTC"]}.");
         $this->assertEquals($result["priceHT"], $priceHT, "HT: Failed asserting that {$priceHT} matches expected {$result["priceHT"]}.");
         $this->assertEquals($result["priceSale"], $valueSale, "Sale: Failed asserting that {$valueSale} matches expected {$result["priceSale"]}.");
         $this->assertEquals($result["totalTaxExc"], $totalExc, "TotalExc: Failed asserting that {$totalExc} matches expected {$result["totalTaxExc"]}.");
         $this->assertEquals($result["totalTaxInc"], $totalInc, "TotalInc: Failed asserting that {$totalInc} matches expected {$result["totalTaxInc"]}.");
+//        dump($result);
     }
 
+//    public function testTaxeFromTTC($priceHT, $nbPerson, $nbDays, $valueTTC, $valueSale, $totalExc, $totalInc, $taxes): void
+//    {
+//        $tx = new TaxesService();
+//        $result = $tx->getTaxeFromTTC($valueTTC, $taxes, $nbPerson, $nbDays);
+//        $this->assertEquals($result["priceTTC"], $valueTTC, "TTC: Failed asserting that {$valueTTC} matches expected {$result["priceTTC"]}.");
+//        $this->assertEquals($result["priceHT"], $priceHT, "HT: Failed asserting that {$priceHT} matches expected {$result["priceHT"]}.");
+//        $this->assertEquals($result["priceSale"], $valueSale, "Sale: Failed asserting that {$valueSale} matches expected {$result["priceSale"]}.");
+//        $this->assertEquals($result["totalTaxExc"], $totalExc, "TotalExc: Failed asserting that {$totalExc} matches expected {$result["totalTaxExc"]}.");
+//        $this->assertEquals($result["totalTaxInc"], $totalInc, "TotalInc: Failed asserting that {$totalInc} matches expected {$result["totalTaxInc"]}.");
+//    }
 
     public function taxesPriceHtProvider(): array
     {
@@ -440,9 +451,4 @@ class TaxesTest extends TestCase
         ];
     }
 
-//    public function testTaxeFromTTC(): void
-//    {
-//        
-//    }
-//
 }

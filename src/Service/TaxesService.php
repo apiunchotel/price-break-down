@@ -23,33 +23,33 @@ class TaxesService
      * @param int $nbDays  Nombre des jours de reservation
      * @return array
      */
-    public function getTaxeFromHt(float $priceHt, array $taxes, int $nbPerson, int $nbDays): array
+    public function getDetailPricesFromPriceHT(float $priceHt, array $taxes, int $nbPerson, int $nbDays): array
     {
         $inc = (int) true;
         $exc = (int) false;
-        $details = [$inc => 0, $exc => 0];
-        $detailTax = [1 => [], 0 => []];
+        $detailTax = [$inc => [], $exc => []];
         foreach ($taxes as $taxe) {
             $detail = $this->convertToObject($taxe, TaxeDetail::class);
             $montant = $this->_calculMontantTaxe($priceHt, $nbPerson, $nbDays, $detail);
-            $details[(int) $detail->getTxInc()] += $montant;
             $detailTax[(int) $detail->getTxInc()][$detail->getTxName()] = $montant;
         }
-        $ttc = $priceHt + array_sum($details);
+        $totalTaxExc = array_sum($detailTax[$exc]);
+        $totalTaxInc = array_sum($detailTax[$inc]);
+        $ttc = $priceHt + $totalTaxExc + $totalTaxInc;
         $ht = $priceHt;
-        $sale = $priceHt + $details[$inc];
+        $sale = $priceHt + $totalTaxInc;
 
         return [
             'priceTTC' => $ttc,
             'priceHT' => $ht,
             'priceSale' => $sale,
-            'totalTaxExc' => $details[$exc],
-            'totalTaxInc' => $details[$inc],
-            'detailTax' => $detailTax,
+            'totalTaxExc' => $totalTaxExc,
+            'totalTaxInc' => $totalTaxInc,
+            'detailTax' => ['inculded' => $detailTax[$inc], 'excluded' => $detailTax[$exc]],
         ];
     }
 
-    public function getPriceHTFromSale(float $priceSale, array $taxes, int $nbPerson, int $nbDays): float
+    public function getPriceHTFromPriceSale(float $priceSale, array $taxes, int $nbPerson, int $nbDays): float
     {
         $taxeFixe = 0;
         $chiffreTaxePoucentage = 0;
@@ -76,10 +76,10 @@ class TaxesService
         return $ht;
     }
 
-    public function getTaxeFromSale(float $priceSale, array $taxes, int $nbPerson, int $nbDays): array
+    public function getDetailPricesFromPriceSale(float $priceSale, array $taxes, int $nbPerson, int $nbDays): array
     {
-        $prixHt = $this->getPriceHTFromSale($priceSale, $taxes, $nbPerson, $nbDays);
-        return $this->getTaxeFromHt($prixHt, $taxes, $nbPerson, $nbDays);
+        $prixHt = $this->getPriceHTFromPriceSale($priceSale, $taxes, $nbPerson, $nbDays);
+        return $this->getDetailPricesFromPriceHT($prixHt, $taxes, $nbPerson, $nbDays);
     }
 
     public function convertToObject(array $taxe): TaxeDetail
