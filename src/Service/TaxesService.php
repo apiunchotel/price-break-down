@@ -36,12 +36,11 @@ class TaxesService
         $totalTaxExc = array_sum($detailTax[$exc]);
         $totalTaxInc = array_sum($detailTax[$inc]);
         $ttc = $priceHt + $totalTaxExc + $totalTaxInc;
-        $ht = $priceHt;
         $sale = $priceHt + $totalTaxInc;
 
         return [
             'priceTTC' => $ttc,
-            'priceHT' => $ht,
+            'priceHT' => $priceHt,
             'priceSale' => $sale,
             'totalTaxExc' => $totalTaxExc,
             'totalTaxInc' => $totalTaxInc,
@@ -49,17 +48,44 @@ class TaxesService
         ];
     }
 
+    /**
+     * Prix HT a partir de prix de vente
+     * 
+     * @param float $priceSale
+     * @param array $taxes
+     * @param int $nbPerson
+     * @param int $nbDays
+     * @return float
+     */
     public function getPriceHTFromPriceSale(float $priceSale, array $taxes, int $nbPerson, int $nbDays): float
     {
         return $this->_getPriceHT(false, $priceSale, $taxes, $nbPerson, $nbDays);
     }
 
+    /**
+     * Les taxes a partir de prix de vente
+     * 
+     * @param float $priceSale
+     * @param array $taxes
+     * @param int $nbPerson
+     * @param int $nbDays
+     * @return array
+     */
     public function getDetailPricesFromPriceSale(float $priceSale, array $taxes, int $nbPerson, int $nbDays): array
     {
         $prixHt = $this->_getPriceHT(false, $priceSale, $taxes, $nbPerson, $nbDays);
         return $this->getDetailPricesFromPriceHT($prixHt, $taxes, $nbPerson, $nbDays);
     }
 
+    /**
+     * Les taxes a partir de prix TTC
+     * 
+     * @param float $priceTTC
+     * @param array $taxes
+     * @param int $nbPerson
+     * @param int $nbDays
+     * @return array
+     */
     public function getDetailPricesFromPriceTTC(float $priceTTC, array $taxes, int $nbPerson, int $nbDays): array
     {
         $prixHt = $this->_getPriceHT(true, $priceTTC, $taxes, $nbPerson, $nbDays);
@@ -76,13 +102,22 @@ class TaxesService
         return $this->copyTo((object) $taxe, TaxeDetail::class);
     }
 
+    /**
+     * get price HT from Price TTC or Price Sale
+     * @param bool $isPriceTTC price is TTC : true else  fale
+     * @param float $priceTTC
+     * @param array $taxes
+     * @param int $nbPerson
+     * @param int $nbDays
+     * @return float
+     */
     private function _getPriceHT(bool $isPriceTTC, float $priceTTC, array $taxes, int $nbPerson, int $nbDays): float
     {
         $taxeFixe = 0;
         $chiffreTaxePoucentage = 0;
         foreach ($taxes as $taxe) {
             $detail = $this->convertToObject($taxe, TaxeDetail::class);
-            $taxNbrOcc = $this->getTaxNbrOcc($detail->getTxFormule(), $nbPerson, $nbDays);
+            $taxNbrOcc = $this->_getTaxNbrOcc($detail->getTxFormule(), $nbPerson, $nbDays);
             if ($detail->getTxInc() || $isPriceTTC) {
                 if ($detail->montantIsFix()) {
                     $taxeFixe += $detail->getTxMontant() * $taxNbrOcc;
@@ -113,12 +148,12 @@ class TaxesService
     private function _calculMontantTaxe(float $priceHt, int $nbPerson, int $nbDays, TaxeDetail $taxeDetail): float
     {
         $txMontant = $taxeDetail->montantIsFix() ? $taxeDetail->getTxMontant() : ($priceHt * $taxeDetail->getTxMontant() / 100);
-        $result = $txMontant * $this->getTaxNbrOcc($taxeDetail->getTxFormule(), $nbPerson, $nbDays);
+        $result = $txMontant * $this->_getTaxNbrOcc($taxeDetail->getTxFormule(), $nbPerson, $nbDays);
 
         return $result;
     }
 
-    public static function getTaxNbrOcc($txFormule, $nbPerson, $nbDays): int
+    private function _getTaxNbrOcc($txFormule, $nbPerson, $nbDays): int
     {
         $result = 1;
         switch ($txFormule) {

@@ -28,7 +28,7 @@ Trait SimilarFieldsCopier
         $targetObject = new $className();
         $targetReflectionClass = new \ReflectionClass($targetObject);
         foreach ($sourceObjectReflection->getProperties() as $sourceProperty) {
-            try {
+//            try {
                 $sourcePropertyName = $sourceProperty->getName();
                 $sourceProperty->setAccessible(true);
                 $sourcePropertyValue = $sourceProperty->getValue($sourceObject);
@@ -38,10 +38,12 @@ Trait SimilarFieldsCopier
 //                    $targetProperty = $targetReflectionClass->getProperty($sourcePropertyName);
 //                    $targetProperty->setAccessible(true);
 //                    $targetProperty->setValue($targetObject, $sourcePropertyValue);
+                } else {
+                    throw new \LogicException("Error Property Tax \"{$sourcePropertyName}\" not exists !");
                 }
-            } catch (\ReflectionException $exception) {
-                continue;
-            }
+//            } catch (\ReflectionException $exception) {
+//                continue;
+//            }
         }
         return $targetObject;
     }

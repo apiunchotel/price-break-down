@@ -27,6 +27,20 @@ class TaxesTest extends TestCase
         $result = $tx->convertToObject($taxes);
         $this->assertInstanceOf(TaxeDetail::class, $result);
     }
+    
+    public function testExceptionConvertToObject(): void
+    {
+        $this->expectException(\LogicException::class);
+        $tx = new TaxesService();
+        $taxes = ["txFormule" => TaxeDetail::BY_STAY_TAX,
+            "txIncXXX" => true,
+            "txName" => "tva",
+            "txMontant" => 10,
+            "txTypeMontant" => TaxeDetail::MONTANT_FIX_TAX,
+            "txOta" => 1,
+        ];
+        $tx->convertToObject($taxes);
+    }
 
     /**
      * @dataProvider taxesPriceHtProvider
