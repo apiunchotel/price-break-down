@@ -3,6 +3,7 @@
 namespace App\Service;
 
 use App\Model\TaxeDetail;
+use App\Model\Tax;
 
 /**
  * Service Taxes Hi
@@ -21,9 +22,9 @@ class TaxesService
      * @param array $taxes Les taxes format standard
      * @param int $nbPerson Nombre des personnes
      * @param int $nbDays  Nombre des jours de reservation
-     * @return array
+     * @return Tax
      */
-    public function getDetailPricesFromPriceHT(float $priceHt, array $taxes, int $nbPerson, int $nbDays): array
+    public function getDetailPricesFromPriceHT(float $priceHt, array $taxes, int $nbPerson, int $nbDays): Tax
     {
         $inc = (int) true;
         $exc = (int) false;
@@ -38,14 +39,14 @@ class TaxesService
         $ttc = $priceHt + $totalTaxExc + $totalTaxInc;
         $sale = $priceHt + $totalTaxInc;
 
-        return [
-            'priceTTC' => $ttc,
-            'priceHT' => $priceHt,
-            'priceSale' => $sale,
-            'totalTaxExc' => $totalTaxExc,
-            'totalTaxInc' => $totalTaxInc,
-            'detailTax' => ['inculded' => $detailTax[$inc], 'excluded' => $detailTax[$exc]],
-        ];
+        return $this->copyTo((object) [
+                    'priceTTC' => $ttc,
+                    'priceHT' => $priceHt,
+                    'priceSale' => $sale,
+                    'totalTaxExc' => $totalTaxExc,
+                    'totalTaxInc' => $totalTaxInc,
+                    'detailTax' => ['inculded' => $detailTax[$inc], 'excluded' => $detailTax[$exc]],
+                ], Tax::class);
     }
 
     /**
@@ -69,9 +70,9 @@ class TaxesService
      * @param array $taxes
      * @param int $nbPerson
      * @param int $nbDays
-     * @return array
+     * @return Tax
      */
-    public function getDetailPricesFromPriceSale(float $priceSale, array $taxes, int $nbPerson, int $nbDays): array
+    public function getDetailPricesFromPriceSale(float $priceSale, array $taxes, int $nbPerson, int $nbDays): Tax
     {
         $prixHt = $this->_getPriceHT(false, $priceSale, $taxes, $nbPerson, $nbDays);
         return $this->getDetailPricesFromPriceHT($prixHt, $taxes, $nbPerson, $nbDays);
@@ -84,9 +85,9 @@ class TaxesService
      * @param array $taxes
      * @param int $nbPerson
      * @param int $nbDays
-     * @return array
+     * @return Tax
      */
-    public function getDetailPricesFromPriceTTC(float $priceTTC, array $taxes, int $nbPerson, int $nbDays): array
+    public function getDetailPricesFromPriceTTC(float $priceTTC, array $taxes, int $nbPerson, int $nbDays): Tax
     {
         $prixHt = $this->_getPriceHT(true, $priceTTC, $taxes, $nbPerson, $nbDays);
         return $this->getDetailPricesFromPriceHT($prixHt, $taxes, $nbPerson, $nbDays);

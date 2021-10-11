@@ -27,7 +27,7 @@ class TaxesTest extends TestCase
         $result = $tx->convertToObject($taxes);
         $this->assertInstanceOf(TaxeDetail::class, $result);
     }
-    
+
     public function testExceptionConvertToObject(): void
     {
         $this->expectException(\LogicException::class);
@@ -48,12 +48,12 @@ class TaxesTest extends TestCase
     public function testDetailPricesFromPriceHT($priceHT, $nbPerson, $nbDays, $valueTTC, $valueSale, $totalExc, $totalInc, $taxes): void
     {
         $tx = new TaxesService();
-        $result = $tx->getDetailPricesFromPriceHT($priceHT, $taxes, $nbPerson, $nbDays);
-        $this->assertEquals($result["priceTTC"], $valueTTC, "TTC: Failed asserting that {$valueTTC} matches expected {$result["priceTTC"]}.");
-        $this->assertEquals($result["priceHT"], $priceHT, "HT: Failed asserting that {$priceHT} matches expected {$result["priceHT"]}.");
-        $this->assertEquals($result["priceSale"], $valueSale, "Sale: Failed asserting that {$valueSale} matches expected {$result["priceSale"]}.");
-        $this->assertEquals($result["totalTaxExc"], $totalExc, "TotalExc: Failed asserting that {$totalExc} matches expected {$result["totalTaxExc"]}.");
-        $this->assertEquals($result["totalTaxInc"], $totalInc, "TotalInc: Failed asserting that {$totalInc} matches expected {$result["totalTaxInc"]}.");
+        $tax = $tx->getDetailPricesFromPriceHT($priceHT, $taxes, $nbPerson, $nbDays);
+        $this->assertEquals($tax->getPriceTTC(), $valueTTC, "TTC: Failed asserting that {$valueTTC} matches expected {$tax->getPriceTTC()}.");
+        $this->assertEquals($tax->getPriceHT(), $priceHT, "HT: Failed asserting that {$priceHT} matches expected {$tax->getPriceHT()}.");
+        $this->assertEquals($tax->getPriceSale(), $valueSale, "Sale: Failed asserting that {$valueSale} matches expected {$tax->getPriceSale()}.");
+        $this->assertEquals($tax->getTotalTaxExc(), $totalExc, "TotalExc: Failed asserting that {$totalExc} matches expected {$tax->getTotalTaxExc()}.");
+        $this->assertEquals($tax->getTotalTaxInc(), $totalInc, "TotalInc: Failed asserting that {$totalInc} matches expected {$tax->getTotalTaxInc()}.");
     }
 
     /**
@@ -82,7 +82,22 @@ class TaxesTest extends TestCase
     public function testDetailPricesFromPriceSale($priceHT, $nbPerson, $nbDays, $valueTTC, $valueSale, $totalExc, $totalInc, $taxes): void
     {
         $tx = new TaxesService();
-        $result = $tx->getDetailPricesFromPriceSale($valueSale, $taxes, $nbPerson, $nbDays);
+        $tax = $tx->getDetailPricesFromPriceSale($valueSale, $taxes, $nbPerson, $nbDays);
+        $this->assertEquals($tax->getPriceTTC(), $valueTTC, "TTC: Failed asserting that {$valueTTC} matches expected {$tax->getPriceTTC()}.");
+        $this->assertEquals($tax->getPriceHT(), $priceHT, "HT: Failed asserting that {$priceHT} matches expected {$tax->getPriceHT()}.");
+        $this->assertEquals($tax->getPriceSale(), $valueSale, "Sale: Failed asserting that {$valueSale} matches expected {$tax->getPriceSale()}.");
+        $this->assertEquals($tax->getTotalTaxExc(), $totalExc, "TotalExc: Failed asserting that {$totalExc} matches expected {$tax->getTotalTaxExc()}.");
+        $this->assertEquals($tax->getTotalTaxInc(), $totalInc, "TotalInc: Failed asserting that {$totalInc} matches expected {$tax->getTotalTaxInc()}.");
+    }
+
+    /**
+     * @dataProvider taxesPriceHtProvider
+     */
+    public function testDetailPricesFromPriceSaleArray($priceHT, $nbPerson, $nbDays, $valueTTC, $valueSale, $totalExc, $totalInc, $taxes): void
+    {
+        $tx = new TaxesService();
+        $tax = $tx->getDetailPricesFromPriceSale($valueSale, $taxes, $nbPerson, $nbDays);
+        $result = $tax->toArray();
         $this->assertEquals($result["priceTTC"], $valueTTC, "TTC: Failed asserting that {$valueTTC} matches expected {$result["priceTTC"]}.");
         $this->assertEquals($result["priceHT"], $priceHT, "HT: Failed asserting that {$priceHT} matches expected {$result["priceHT"]}.");
         $this->assertEquals($result["priceSale"], $valueSale, "Sale: Failed asserting that {$valueSale} matches expected {$result["priceSale"]}.");
@@ -96,12 +111,12 @@ class TaxesTest extends TestCase
     public function testDetailPricesFromPriceTTC($priceHT, $nbPerson, $nbDays, $valueTTC, $valueSale, $totalExc, $totalInc, $taxes): void
     {
         $tx = new TaxesService();
-        $result = $tx->getDetailPricesFromPriceTTC($valueTTC, $taxes, $nbPerson, $nbDays);
-        $this->assertEquals($result["priceTTC"], $valueTTC, "TTC: Failed asserting that {$valueTTC} matches expected {$result["priceTTC"]}.");
-        $this->assertEquals($result["priceHT"], $priceHT, "HT: Failed asserting that {$priceHT} matches expected {$result["priceHT"]}.");
-        $this->assertEquals($result["priceSale"], $valueSale, "Sale: Failed asserting that {$valueSale} matches expected {$result["priceSale"]}.");
-        $this->assertEquals($result["totalTaxExc"], $totalExc, "TotalExc: Failed asserting that {$totalExc} matches expected {$result["totalTaxExc"]}.");
-        $this->assertEquals($result["totalTaxInc"], $totalInc, "TotalInc: Failed asserting that {$totalInc} matches expected {$result["totalTaxInc"]}.");
+        $tax = $tx->getDetailPricesFromPriceTTC($valueTTC, $taxes, $nbPerson, $nbDays);
+        $this->assertEquals($tax->getPriceTTC(), $valueTTC, "TTC: Failed asserting that {$valueTTC} matches expected {$tax->getPriceTTC()}.");
+        $this->assertEquals($tax->getPriceHT(), $priceHT, "HT: Failed asserting that {$priceHT} matches expected {$tax->getPriceHT()}.");
+        $this->assertEquals($tax->getPriceSale(), $valueSale, "Sale: Failed asserting that {$valueSale} matches expected {$tax->getPriceSale()}.");
+        $this->assertEquals($tax->getTotalTaxExc(), $totalExc, "TotalExc: Failed asserting that {$totalExc} matches expected {$tax->getTotalTaxExc()}.");
+        $this->assertEquals($tax->getTotalTaxInc(), $totalInc, "TotalInc: Failed asserting that {$totalInc} matches expected {$tax->getTotalTaxInc()}.");
     }
 
     public function taxesPriceHtProvider(): array
