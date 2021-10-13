@@ -60,6 +60,20 @@ class TaxesTest extends TestCase
         $this->assertInstanceOf(TaxeDetail::class, $result);
     }
 
+    public function testConvertToObjectWithoutTxOta(): void
+    {
+        $tx = new TaxesService();
+        $taxes = ["txFormule" => TaxeDetail::BY_STAY_TAX,
+            "txInc" => true,
+            "txName" => "tva",
+            "txMontant" => 10,
+            "txTypeMontant" => TaxeDetail::MONTANT_FIX_TAX,
+        ];
+        $tx->convertToObject($taxes);
+        $result = $tx->convertToObject($taxes);
+        $this->assertInstanceOf(TaxeDetail::class, $result);
+    }
+
     /**
      * @dataProvider taxesPriceHtProvider
      */
