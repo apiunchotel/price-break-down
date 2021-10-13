@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Traits;
+namespace Hi\Traits;
 
 use Doctrine\Common\Proxy\Proxy;
 use Doctrine\Persistence\ObjectManager;

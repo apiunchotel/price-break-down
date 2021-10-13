@@ -1,9 +1,9 @@
 <?php
 
-namespace App\Service;
+namespace Hi\Service;
 
-use App\Model\TaxeDetail;
-use App\Model\Tax;
+use Hi\Model\TaxeDetail;
+use Hi\Model\Tax;
 
 /**
  * Service Taxes Hi
@@ -13,7 +13,7 @@ use App\Model\Tax;
 class TaxesService
 {
 
-    use \App\Traits\SimilarFieldsCopier;
+    use \Hi\Traits\SimilarFieldsCopier;
 
     /**
      * Les taxes a partir de prix HT
