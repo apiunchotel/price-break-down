@@ -100,6 +100,14 @@ class TaxesService
 
     public function convertToObject(array $taxe): TaxeDetail
     {
+        $sourceObjectReflection = new \ReflectionClass(TaxeDetail::class);
+        foreach ($sourceObjectReflection->getProperties() as $sourceProperty) {
+            /*@var $sourceProperty \ReflectionProperty*/
+            $nameProprety = $sourceProperty->getName();
+            if(!array_key_exists($nameProprety, $taxe)) {
+                throw new \LogicException("Error Property Tax \"{$nameProprety}\" not exists !");
+            }
+        }
         return $this->copyTo((object) $taxe, TaxeDetail::class);
     }
 
