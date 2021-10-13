@@ -18,12 +18,12 @@
     },
     "autoload": {
         "psr-4": {
-            "App\\": "src/"
+            "Hi\\": "src/"
         }
     },
     "autoload-dev": {
         "psr-4": {
-            "App\\Tests\\": "tests/"
+            "Hi\\Tests\\": "tests/"
         }
     }
 }
