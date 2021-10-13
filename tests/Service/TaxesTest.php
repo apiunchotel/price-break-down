@@ -1,10 +1,10 @@
 <?php
 
-namespace App\Tests\Service;
+namespace Hi\Tests\Service;
 
-use App\Service\TaxesService;
+use Hi\Service\TaxesService;
 use PHPUnit\Framework\TestCase;
-use App\Model\TaxeDetail;
+use Hi\Model\TaxeDetail;
 
 /**
  * Service Taxes Hi
