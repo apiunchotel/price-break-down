@@ -33,13 +33,31 @@ class TaxesTest extends TestCase
         $this->expectException(\LogicException::class);
         $tx = new TaxesService();
         $taxes = ["txFormule" => TaxeDetail::BY_STAY_TAX,
-            "txIncXXX" => true,
+//            "txInc" => true,
             "txName" => "tva",
             "txMontant" => 10,
             "txTypeMontant" => TaxeDetail::MONTANT_FIX_TAX,
             "txOta" => 1,
         ];
         $tx->convertToObject($taxes);
+        $result = $tx->convertToObject($taxes);
+        $this->assertInstanceOf(TaxeDetail::class, $result);
+    }
+
+    public function testConvertToObjectAddOthreField(): void
+    {
+        $tx = new TaxesService();
+        $taxes = ["txFormule" => TaxeDetail::BY_STAY_TAX,
+            "txIncXXX" => true,
+            "txInc" => true,
+            "txName" => "tva",
+            "txMontant" => 10,
+            "txTypeMontant" => TaxeDetail::MONTANT_FIX_TAX,
+            "txOta" => 1,
+        ];
+        $tx->convertToObject($taxes);
+        $result = $tx->convertToObject($taxes);
+        $this->assertInstanceOf(TaxeDetail::class, $result);
     }
 
     /**

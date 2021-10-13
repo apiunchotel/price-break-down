@@ -38,8 +38,8 @@ Trait SimilarFieldsCopier
 //                    $targetProperty = $targetReflectionClass->getProperty($sourcePropertyName);
 //                    $targetProperty->setAccessible(true);
 //                    $targetProperty->setValue($targetObject, $sourcePropertyValue);
-                } else {
-                    throw new \LogicException("Error Property Tax \"{$sourcePropertyName}\" not exists !");
+//                } else {
+//                    throw new \LogicException("Error Property Tax \"{$sourcePropertyName}\" not exists !");
                 }
 //            } catch (\ReflectionException $exception) {
 //                continue;
