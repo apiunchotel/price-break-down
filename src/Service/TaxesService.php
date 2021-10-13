@@ -104,7 +104,7 @@ class TaxesService
         foreach ($sourceObjectReflection->getProperties() as $sourceProperty) {
             /*@var $sourceProperty \ReflectionProperty*/
             $nameProprety = $sourceProperty->getName();
-            if(!array_key_exists($nameProprety, $taxe)) {
+            if(!array_key_exists($nameProprety, $taxe) && !in_array($nameProprety, ['txOta'])) {
                 throw new \LogicException("Error Property Tax \"{$nameProprety}\" not exists !");
             }
         }
