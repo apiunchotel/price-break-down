@@ -29,10 +29,12 @@ class TaxesService
         $inc = (int) true;
         $exc = (int) false;
         $detailTax = [$inc => [], $exc => []];
+        $originalTaxes = [];
         foreach ($taxes as $taxe) {
             $detail = $this->convertToObject($taxe, TaxeDetail::class);
             $montant = $this->_calculMontantTaxe($priceHt, $nbPerson, $nbDays, $detail);
             $detailTax[(int) $detail->getTxInc()][$detail->getTxName()] = $montant;
+            $originalTaxes[] = $detail->toArray();
         }
         $totalTaxExc = array_sum($detailTax[$exc]);
         $totalTaxInc = array_sum($detailTax[$inc]);
@@ -46,6 +48,7 @@ class TaxesService
                     'totalTaxExc' => $totalTaxExc,
                     'totalTaxInc' => $totalTaxInc,
                     'detailTax' => ['inculded' => $detailTax[$inc], 'excluded' => $detailTax[$exc]],
+                    'originalTaxes' => $originalTaxes,
                 ], Tax::class);
     }
 
@@ -102,9 +105,9 @@ class TaxesService
     {
         $sourceObjectReflection = new \ReflectionClass(TaxeDetail::class);
         foreach ($sourceObjectReflection->getProperties() as $sourceProperty) {
-            /*@var $sourceProperty \ReflectionProperty*/
+            /* @var $sourceProperty \ReflectionProperty */
             $nameProprety = $sourceProperty->getName();
-            if(!array_key_exists($nameProprety, $taxe) && !in_array($nameProprety, ['txOta'])) {
+            if (!array_key_exists($nameProprety, $taxe) && !in_array($nameProprety, ['txOta'])) {
                 throw new \LogicException("Error Property Tax \"{$nameProprety}\" not exists !");
             }
         }

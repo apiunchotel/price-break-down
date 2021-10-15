@@ -46,6 +46,12 @@ class Tax
      */
     private $detailTax;
 
+    /**
+     * Details taxes used
+     * @var array
+     */
+    private $originalTaxes;
+
     public function getPriceHT(): float
     {
         return $this->priceHT;
@@ -74,6 +80,11 @@ class Tax
     public function getDetailTax(): array
     {
         return $this->detailTax;
+    }
+
+    public function getOriginalTaxes(): array
+    {
+        return $this->originalTaxes;
     }
 
     public function setPriceHT(float $priceHT)
@@ -112,6 +123,12 @@ class Tax
         return $this;
     }
 
+    public function setOriginalTaxes(array $originalTaxes): self
+    {
+        $this->originalTaxes = $originalTaxes;
+        return $this;
+    }
+
     public function toArray()
     {
         return [
@@ -121,6 +138,7 @@ class Tax
             'totalTaxExc' => $this->totalTaxExc,
             'totalTaxInc' => $this->totalTaxInc,
             'detailTax' => $this->detailTax,
+            'originalTaxes' => $this->originalTaxes,
         ];
     }
 

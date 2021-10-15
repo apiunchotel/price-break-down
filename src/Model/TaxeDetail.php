@@ -123,4 +123,15 @@ class TaxeDetail
         return $this->getTxTypeMontant() == self::MONTANT_FIX_TAX;
     }
 
+    public function toArray()
+    {
+        return [
+            'txName' => $this->getTxName(),
+            'txMontant' => $this->getTxMontant(),
+            'txFormule' => $this->getTxFormule(),
+            'txTypeMontant' => $this->getTxTypeMontant(),
+            'txInc' => $this->getTxInc()
+        ];
+    }
+
 }
