@@ -1,6 +1,6 @@
 <?php
 
-namespace Hi\Traits;
+namespace Apiunchotel\PriceBreakDown\Traits;
 
 use Doctrine\Common\Proxy\Proxy;
 use Doctrine\Persistence\ObjectManager;
