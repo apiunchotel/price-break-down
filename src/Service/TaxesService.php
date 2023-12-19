@@ -1,9 +1,9 @@
 <?php
 
-namespace Hi\Service;
+namespace Apiunchotel\PriceBreakDown\Service;
 
-use Hi\Model\TaxeDetail;
-use Hi\Model\Tax;
+use Apiunchotel\PriceBreakDown\Model\TaxeDetail;
+use Apiunchotel\PriceBreakDown\Model\Tax;
 
 /**
  * Service Taxes Hi
@@ -13,7 +13,7 @@ use Hi\Model\Tax;
 class TaxesService
 {
 
-    use \Hi\Traits\SimilarFieldsCopier;
+    use \Apiunchotel\PriceBreakDown\Traits\SimilarFieldsCopier;
 
     /**
      * Les taxes a partir de prix HT

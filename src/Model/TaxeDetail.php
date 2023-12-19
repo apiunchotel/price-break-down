@@ -1,6 +1,6 @@
 <?php
 
-namespace Hi\Model;
+namespace Apiunchotel\PriceBreakDown\Model;
 
 /**
  * Model TaxeDetail
