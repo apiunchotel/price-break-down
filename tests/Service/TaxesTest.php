@@ -1,10 +1,10 @@
 <?php
 
-namespace Hi\Tests\Service;
+namespace Apiunchotel\PriceBreakDown\Tests\Service;
 
-use Hi\Service\TaxesService;
+use Apiunchotel\PriceBreakDown\Service\TaxesService;
 use PHPUnit\Framework\TestCase;
-use Hi\Model\TaxeDetail;
+use Apiunchotel\PriceBreakDown\Model\TaxeDetail;
 
 /**
  * Service Taxes Hi
