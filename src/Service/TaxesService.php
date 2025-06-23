@@ -145,7 +145,7 @@ class TaxesService
             return $priceTTC - $taxeFixe;
         }
         $ht = ((100 * ($priceTTC - $taxeFixe)) / $chiffreTaxePoucentage) / (1 + (100 / $chiffreTaxePoucentage));
-        return $ht;
+        return round($ht, 6);
     }
 
     /**
