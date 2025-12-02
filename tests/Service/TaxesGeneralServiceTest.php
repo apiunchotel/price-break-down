@@ -37,6 +37,13 @@ class TaxesServiceV2ExamplesTest extends TestCase
         $this->assertEqualsWithDelta($expectedTTC, $data['priceTTC'], $delta, "$country - TTC incorrect from SALE price ");
         $this->assertEqualsWithDelta($expectedHT, $data['priceHT'], $delta, "$country - HT incorrect from SALE price ");
         $this->assertEqualsWithDelta($expectedPV, $data['priceSale'], $delta, "$country - PV incorrect from SALE price ");
+
+        $result2 = $service->getDetailPricesFromPriceSale($expectedPV, $taxes, $persons, $nights);
+        $data2 = $result2->toArray();
+        $this->assertEqualsWithDelta($expectedTTC, $data2['priceTTC'], $delta, "$country - TTC incorrect from SALE price ");
+        $this->assertEqualsWithDelta($expectedHT, $data2['priceHT'], $delta, "$country - HT incorrect from SALE price ");
+        $this->assertEqualsWithDelta($expectedPV, $data2['priceSale'], $delta, "$country - PV incorrect from SALE price ");
+        
     }
 
     /**
@@ -62,6 +69,12 @@ class TaxesServiceV2ExamplesTest extends TestCase
         $this->assertEqualsWithDelta($expectedTTC, $data['priceTTC'], $delta, "$country - TTC incorrect from TTC price");
         $this->assertEqualsWithDelta($expectedHT, $data['priceHT'], $delta, "$country - HT incorrect from TTC price");
         $this->assertEqualsWithDelta($expectedPV, $data['priceSale'], $delta, "$country - PV incorrect from TTC price");
+
+        $result2 = $service->getDetailPricesFromPriceTTC($expectedTTC, $taxes, $persons, $nights);
+        $data2 = $result2->toArray();
+        $this->assertEqualsWithDelta($expectedTTC, $data2['priceTTC'], $delta, "$country - TTC incorrect from TTC price");
+        $this->assertEqualsWithDelta($expectedHT, $data2['priceHT'], $delta, "$country - HT incorrect from TTC price");
+        $this->assertEqualsWithDelta($expectedPV, $data2['priceSale'], $delta, "$country - PV incorrect from TTC price");
     }
     
     public function examplesProvider(): array

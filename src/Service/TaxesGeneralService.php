@@ -22,6 +22,57 @@ class TaxesGeneralService
 {
 
     use \Apiunchotel\PriceBreakDown\Traits\SimilarFieldsCopier;
+
+
+    /**
+     * Les taxes a partir de prix HT
+     * @deprecated Utilisez breakdownFromHTv2() à la place
+     *
+     * @param float $priceHt
+     * @param array $taxes
+     * @param integer $nbPerson
+     * @param integer $nbDays
+     * @param array $context
+     * @return Tax
+     */
+    public function getDetailPricesFromPriceHT(float $priceHt, array $taxes, int $nbPerson, int $nbDays, array $context = []): Tax
+    {
+        return $this->breakdownFromHTv2($priceHt, $taxes, $nbPerson, $nbDays, $context);
+    }
+
+    /**
+     * Les taxes a partir de prix de vente
+     * @deprecated Utilisez breakdownFromSalePriceV2() à la place
+     * 
+     * @param float $priceSale
+     * @param array $taxes
+     * @param integer $nbPerson
+     * @param integer $nbDays
+     * @param array $context
+     * @return Tax
+     */
+    public function getDetailPricesFromPriceSale(float $priceSale, array $taxes, int $nbPerson, int $nbDays, array $context = []): Tax
+    {
+        return $this->breakdownFromSalePriceV2($priceSale, $taxes, $nbPerson, $nbDays, $context);
+    }
+
+    /**
+     * Les taxes a partir de prix TTC
+     * @deprecated Utilisez breakdownFromTTCv2() à la place
+     *
+     * @param float $priceTTC
+     * @param array $taxes
+     * @param integer $nbPerson
+     * @param integer $nbDays
+     * @param array $context
+     * @return Tax
+     */
+    public function getDetailPricesFromPriceTTC(float $priceTTC, array $taxes, int $nbPerson, int $nbDays, array $context = []): Tax
+    {
+        return $this->breakdownFromTTCv2($priceTTC, $taxes, $nbPerson, $nbDays, $context);
+    }
+
+
     public function breakdownFromTTCv2(float $priceTTC, array $taxes, int $persons = 1, int $nights = 1, array $context = []): Tax
     {
         $ht = $this->calculateHTClosedFormV2($priceTTC, $taxes, $persons, $nights, $context);
