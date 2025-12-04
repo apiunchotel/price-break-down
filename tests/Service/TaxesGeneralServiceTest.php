@@ -4,6 +4,8 @@ namespace Apiunchotel\PriceBreakDown\Tests\Service;
 
 use Apiunchotel\PriceBreakDown\Service\TaxesGeneralService;
 use PHPUnit\Framework\TestCase;
+use Apiunchotel\PriceBreakDown\Model\TaxeDetail;
+
 
 /**
  * Test de validation internationale du moteur de calcul des taxes (V2)
@@ -29,7 +31,7 @@ class TaxesServiceV2ExamplesTest extends TestCase
     ): void {
         $service = new TaxesGeneralService();
 
-        $result = $service->breakdownFromSalePriceV2($expectedPV, $taxes, $persons, $nights);
+        $result = $service->getDetailPricesFromPriceSale($expectedPV, $taxes, $persons, $nights);
         $data = $result->toArray();
         // On tolère ±0.1 de différence à cause des arrondis
         $delta = 0.1;
@@ -37,12 +39,6 @@ class TaxesServiceV2ExamplesTest extends TestCase
         $this->assertEqualsWithDelta($expectedTTC, $data['priceTTC'], $delta, "$country - TTC incorrect from SALE price ");
         $this->assertEqualsWithDelta($expectedHT, $data['priceHT'], $delta, "$country - HT incorrect from SALE price ");
         $this->assertEqualsWithDelta($expectedPV, $data['priceSale'], $delta, "$country - PV incorrect from SALE price ");
-
-        $result2 = $service->getDetailPricesFromPriceSale($expectedPV, $taxes, $persons, $nights);
-        $data2 = $result2->toArray();
-        $this->assertEqualsWithDelta($expectedTTC, $data2['priceTTC'], $delta, "$country - TTC incorrect from SALE price ");
-        $this->assertEqualsWithDelta($expectedHT, $data2['priceHT'], $delta, "$country - HT incorrect from SALE price ");
-        $this->assertEqualsWithDelta($expectedPV, $data2['priceSale'], $delta, "$country - PV incorrect from SALE price ");
         
     }
 
@@ -60,7 +56,7 @@ class TaxesServiceV2ExamplesTest extends TestCase
     ): void {
         $service = new TaxesGeneralService();
 
-        $result = $service->breakdownFromTTCv2($expectedTTC, $taxes, $persons, $nights);
+        $result = $service->getDetailPricesFromPriceTTC($expectedTTC, $taxes, $persons, $nights);
         $data = $result->toArray();
         // dd($data);
         // On tolère ±0.1 de différence à cause des arrondis
@@ -70,16 +66,145 @@ class TaxesServiceV2ExamplesTest extends TestCase
         $this->assertEqualsWithDelta($expectedHT, $data['priceHT'], $delta, "$country - HT incorrect from TTC price");
         $this->assertEqualsWithDelta($expectedPV, $data['priceSale'], $delta, "$country - PV incorrect from TTC price");
 
-        $result2 = $service->getDetailPricesFromPriceTTC($expectedTTC, $taxes, $persons, $nights);
-        $data2 = $result2->toArray();
-        $this->assertEqualsWithDelta($expectedTTC, $data2['priceTTC'], $delta, "$country - TTC incorrect from TTC price");
-        $this->assertEqualsWithDelta($expectedHT, $data2['priceHT'], $delta, "$country - HT incorrect from TTC price");
-        $this->assertEqualsWithDelta($expectedPV, $data2['priceSale'], $delta, "$country - PV incorrect from TTC price");
     }
     
     public function examplesProvider(): array
     {
         $ex = [];
+
+        $priceHT = 100;
+        $nbPerson = 1;
+        $nbDays = 1;
+$ex = [];
+
+// 1. BY_STAY_TAX/MONTANT_PERCENT_TAX/INCLUDED
+$ex["BY_STAY_TAX/MONTANT_PERCENT_TAX/INCLUDED"] = [
+    'Pays Exemple',
+    110,
+    $priceHT,
+    110,
+    $nbPerson,
+    $nbDays,
+    [
+        ["id" => 1, "txName" => "tva", "txTypeMontant" => TaxeDetail::MONTANT_PERCENT_TAX, "txMontant" => 10, "txFormule" => TaxeDetail::BY_STAY_TAX, "taxe_cumul" => [], "txInc" => true],
+    ]
+];
+
+// 2. BY_STAY_TAX/MONTANT_FIX_TAX/INCLUDED
+$ex["BY_STAY_TAX/MONTANT_FIX_TAX/INCLUDED"] = [
+    'Pays Exemple',
+    $priceHT + 10,
+    $priceHT,
+    $priceHT + 10,
+    $nbPerson,
+    $nbDays,
+    [
+        ["id" => 2, "txName" => "tva", "txTypeMontant" => TaxeDetail::MONTANT_FIX_TAX, "txMontant" => 10, "txFormule" => TaxeDetail::BY_STAY_TAX, "taxe_cumul" => [], "txInc" => true],
+    ]
+];
+
+// 3. BY_STAY_TAX/MONTANT_FIX_TAX/EXCLUDED
+$ex["BY_STAY_TAX/MONTANT_FIX_TAX/EXCLUDED"] = [
+    'Pays Exemple',
+    $priceHT + 7,
+    $priceHT,
+    $priceHT,
+    $nbPerson,
+    $nbDays,
+    [
+        ["id" => 3, "txName" => "tva", "txTypeMontant" => TaxeDetail::MONTANT_FIX_TAX, "txMontant" => 7, "txFormule" => TaxeDetail::BY_STAY_TAX, "taxe_cumul" => [], "txInc" => false],
+    ]
+];
+
+// 4. BY_STAY_TAX/GENERAL
+$ex["BY_STAY_TAX/GENERAL"] = [
+    'Pays Exemple',
+    $priceHT + ($priceHT * ((10 + 5 + 5) / 100)) + 7 + 8 + 9,
+    $priceHT,
+    $priceHT + ($priceHT * ((10 + 5) / 100)) + 8 + 9,
+    $nbPerson,
+    $nbDays,
+    [
+        ["id" => 4, "txName" => "tva1", "txTypeMontant" => TaxeDetail::MONTANT_PERCENT_TAX, "txMontant" => 10, "txFormule" => TaxeDetail::BY_STAY_TAX, "taxe_cumul" => [], "txInc" => true],
+        ["id" => 5, "txName" => "tva2", "txTypeMontant" => TaxeDetail::MONTANT_PERCENT_TAX, "txMontant" => 5, "txFormule" => TaxeDetail::BY_STAY_TAX, "taxe_cumul" => [], "txInc" => false],
+        ["id" => 6, "txName" => "tva2", "txTypeMontant" => TaxeDetail::MONTANT_PERCENT_TAX, "txMontant" => 5, "txFormule" => TaxeDetail::BY_STAY_TAX, "taxe_cumul" => [], "txInc" => true],
+        ["id" => 7, "txName" => "tva3", "txTypeMontant" => TaxeDetail::MONTANT_FIX_TAX, "txMontant" => 7, "txFormule" => TaxeDetail::BY_STAY_TAX, "taxe_cumul" => [], "txInc" => false],
+        ["id" => 8, "txName" => "tva4", "txTypeMontant" => TaxeDetail::MONTANT_FIX_TAX, "txMontant" => 8, "txFormule" => TaxeDetail::BY_STAY_TAX, "taxe_cumul" => [], "txInc" => true],
+        ["id" => 9, "txName" => "tva5", "txTypeMontant" => TaxeDetail::MONTANT_FIX_TAX, "txMontant" => 9, "txFormule" => TaxeDetail::BY_STAY_TAX, "taxe_cumul" => [], "txInc" => true],
+    ]
+];
+
+// 7. BY_NIGHT_TAX/MONTANT_FIX_TAX/INCLUDED
+$ex["BY_NIGHT_TAX/MONTANT_FIX_TAX/INCLUDED"] = [
+    'Pays Exemple',
+    $priceHT + 6 * 2,
+    $priceHT,
+    $priceHT + 6 * 2,
+    $nbPerson,
+    $nbDays * 2,
+    [
+        ["id" => 13, "txName" => "tva", "txTypeMontant" => TaxeDetail::MONTANT_FIX_TAX, "txMontant" => 6, "txFormule" => TaxeDetail::BY_NIGHT_TAX, "taxe_cumul" => [], "txInc" => true],
+    ]
+];
+
+// 8. BY_NIGHT_TAX/MONTANT_FIX_TAX/EXCLUDED
+$ex["BY_NIGHT_TAX/MONTANT_FIX_TAX/EXCLUDED"] = [
+    'Pays Exemple',
+    $priceHT + 6 * 2,
+    $priceHT,
+    $priceHT,
+    $nbPerson,
+    $nbDays * 2,
+    [
+        ["id" => 14, "txName" => "tva", "txTypeMontant" => TaxeDetail::MONTANT_FIX_TAX, "txMontant" => 6, "txFormule" => TaxeDetail::BY_NIGHT_TAX, "taxe_cumul" => [], "txInc" => false],
+    ]
+];
+
+// 12. BY_NIGHT_AND_PERSON_TAX/MONTANT_FIX_TAX/INCLUDED
+$ex["BY_NIGHT_AND_PERSON_TAX/MONTANT_FIX_TAX/INCLUDED"] = [
+    'Pays Exemple',
+    $priceHT + 9 * 2 * 3,
+    $priceHT,
+    $priceHT + 9 * 2 * 3,
+    $nbPerson * 3,
+    $nbDays * 2,
+    [
+        ["id" => 23, "txName" => "tva", "txTypeMontant" => TaxeDetail::MONTANT_FIX_TAX, "txMontant" => 9, "txFormule" => TaxeDetail::BY_NIGHT_AND_PERSON_TAX, "taxe_cumul" => [], "txInc" => true],
+    ]
+];
+
+// 13. BY_NIGHT_AND_PERSON_TAX/MONTANT_FIX_TAX/EXCLUDED
+$ex["BY_NIGHT_AND_PERSON_TAX/MONTANT_FIX_TAX/EXCLUDED"] = [
+    'Pays Exemple',
+    $priceHT + 9 * 2 * 3,
+    $priceHT,
+    $priceHT,
+    $nbPerson * 3,
+    $nbDays * 2,
+    [
+        ["id" => 24, "txName" => "tva", "txTypeMontant" => TaxeDetail::MONTANT_FIX_TAX, "txMontant" => 9, "txFormule" => TaxeDetail::BY_NIGHT_AND_PERSON_TAX, "taxe_cumul" => [], "txInc" => false],
+    ]
+];
+
+
+
+
+
+// 17. BY_PERSON_TAX/MONTANT_FIX_TAX
+$ex["BY_PERSON_TAX/MONTANT_FIX_TAX"] = [
+    'Pays Exemple',
+    $priceHT + 9 * 4,
+    $priceHT,
+    $priceHT + 9 * 4,
+    $nbPerson * 4,
+    $nbDays * 3,
+    [
+        ["id" => 33, "txName" => "tva", "txTypeMontant" => TaxeDetail::MONTANT_FIX_TAX, "txMontant" => 9, "txFormule" => TaxeDetail::BY_PERSON_TAX, "taxe_cumul" => [], "txInc" => true],
+    ]
+];
+
+
+// Pour les autres cas (BY_NIGHT_TAX, BY_NIGHT_AND_PERSON_TAX, BY_PERSON_TAX), appliquez la même structure, en ajustant les calculs des montants, les nombres de personnes/jours et la liste des taxes.
 
 
 
@@ -92,7 +217,7 @@ class TaxesServiceV2ExamplesTest extends TestCase
             2,
             1,
             [
-                ["id" => 1, "txName" => "VAT", "txTypeMontant" => 0, "txMontant" => 14, "txFormule" => "BY_STAY_TAX", "taxe_cumul" => [], "txInc" => true],
+                ["id" => 1, "txName" => "VAT", "txTypeMontant" => 0, "txMontant" => 14, "txFormule" => TaxeDetail::BY_STAY_TAX, "taxe_cumul" => [], "txInc" => true],
             ]
         ];
 
@@ -105,10 +230,10 @@ class TaxesServiceV2ExamplesTest extends TestCase
             2,
             1,
             [
-                ["id" => 1, "txName" => "VAT ",  "txTypeMontant" => 0, "txMontant" => 5,  "txFormule" => "BY_STAY_TAX", "taxe_cumul" => [2, 3, 4], "txInc" => false],
-                ["id" => 2, "txName" => "Taxe touristique ",  "txTypeMontant" => 0, "txMontant" => 4,  "txFormule" => "BY_STAY_TAX", "taxe_cumul" => [], "txInc" => false],
-                ["id" => 3, "txName" => "Tax municipale",      "txTypeMontant" => 0, "txMontant" => 5,  "txFormule" => "BY_STAY_TAX", "taxe_cumul" => [4], "txInc" => false],
-                ["id" => 4, "txName" => "service fees",        "txTypeMontant" => 0, "txMontant" => 8,  "txFormule" => "BY_STAY_TAX", "taxe_cumul" => [], "txInc" => false],
+                ["id" => 1, "txName" => "VAT ",  "txTypeMontant" => 0, "txMontant" => 5,  "txFormule" => TaxeDetail::BY_STAY_TAX, "taxe_cumul" => [2, 3, 4], "txInc" => false],
+                ["id" => 2, "txName" => "Taxe touristique ",  "txTypeMontant" => 0, "txMontant" => 4,  "txFormule" => TaxeDetail::BY_STAY_TAX, "taxe_cumul" => [], "txInc" => false],
+                ["id" => 3, "txName" => "Tax municipale",      "txTypeMontant" => 0, "txMontant" => 5,  "txFormule" => TaxeDetail::BY_STAY_TAX, "taxe_cumul" => [4], "txInc" => false],
+                ["id" => 4, "txName" => "service fees",        "txTypeMontant" => 0, "txMontant" => 8,  "txFormule" => TaxeDetail::BY_STAY_TAX, "taxe_cumul" => [], "txInc" => false],
             ]
         ];
 
@@ -121,10 +246,10 @@ class TaxesServiceV2ExamplesTest extends TestCase
             2,
             1,
             [
-                ["id" => 1, "txName" => "service charge", "txTypeMontant" => 0, "txMontant" => 10,   "txFormule" => "BY_STAY_TAX", "taxe_cumul" => [], "txInc" => false],
-                ["id" => 2, "txName" => "delivery taxe",  "txTypeMontant" => 0, "txMontant" => 5,    "txFormule" => "BY_STAY_TAX", "taxe_cumul" => [1], "txInc" => false],
-                ["id" => 3, "txName" => "bed taxe",       "txTypeMontant" => 1, "txMontant" => 3,   "txFormule" => "BY_STAY_TAX", "taxe_cumul" => [], "txInc" => false],
-                ["id" => 4, "txName" => "vat taxe",       "txTypeMontant" => 0, "txMontant" => 10.5, "txFormule" => "BY_STAY_TAX", "taxe_cumul" => [1, 2, 3], "txInc" => false],
+                ["id" => 1, "txName" => "service charge", "txTypeMontant" => 0, "txMontant" => 10,   "txFormule" => TaxeDetail::BY_STAY_TAX, "taxe_cumul" => [], "txInc" => false],
+                ["id" => 2, "txName" => "delivery taxe",  "txTypeMontant" => 0, "txMontant" => 5,    "txFormule" => TaxeDetail::BY_STAY_TAX, "taxe_cumul" => [1], "txInc" => false],
+                ["id" => 3, "txName" => "bed taxe",       "txTypeMontant" => 1, "txMontant" => 3,   "txFormule" => TaxeDetail::BY_STAY_TAX, "taxe_cumul" => [], "txInc" => false],
+                ["id" => 4, "txName" => "vat taxe",       "txTypeMontant" => 0, "txMontant" => 10.5, "txFormule" => TaxeDetail::BY_STAY_TAX, "taxe_cumul" => [1, 2, 3], "txInc" => false],
             ]
         ];
 
@@ -137,10 +262,10 @@ class TaxesServiceV2ExamplesTest extends TestCase
             2,
             3,
             [
-                ["id" => 1, "txName" => "service charge", "txTypeMontant" => 0, "txMontant" => 10, "txFormule" => "BY_STAY_TAX", "taxe_cumul" => [], "txInc" => false],
-                ["id" => 2, "txName" => "Tax City",       "txTypeMontant" => 0, "txMontant" => 5,  "txFormule" => "BY_STAY_TAX", "taxe_cumul" => [1], "txInc" => false],
-                ["id" => 3, "txName" => "Accommodation fees", "txTypeMontant" => 1, "txMontant" => 3, "txFormule" => "BY_NIGHT_TAX", "taxe_cumul" => [], "txInc" => false],
-                ["id" => 4, "txName" => "vat",            "txTypeMontant" => 0, "txMontant" => 10, "txFormule" => "BY_STAY_TAX", "taxe_cumul" => [1, 2, 3], "txInc" => false],
+                ["id" => 1, "txName" => "service charge", "txTypeMontant" => 0, "txMontant" => 10, "txFormule" => TaxeDetail::BY_STAY_TAX, "taxe_cumul" => [], "txInc" => false],
+                ["id" => 2, "txName" => "Tax City",       "txTypeMontant" => 0, "txMontant" => 5,  "txFormule" => TaxeDetail::BY_STAY_TAX, "taxe_cumul" => [1], "txInc" => false],
+                ["id" => 3, "txName" => "Accommodation fees", "txTypeMontant" => 1, "txMontant" => 3, "txFormule" => TaxeDetail::BY_NIGHT_TAX, "taxe_cumul" => [], "txInc" => false],
+                ["id" => 4, "txName" => "vat",            "txTypeMontant" => 0, "txMontant" => 10, "txFormule" => TaxeDetail::BY_STAY_TAX, "taxe_cumul" => [1, 2, 3], "txInc" => false],
             ]
         ];
 
@@ -153,10 +278,10 @@ class TaxesServiceV2ExamplesTest extends TestCase
             2,
             1,
             [
-                ["id" => 1, "txName" => "service charge", "txTypeMontant" => 0, "txMontant" => 10, "txFormule" => "BY_STAY_TAX", "taxe_cumul" => [], "txInc" => false],
-                ["id" => 2, "txName" => "Tax City",       "txTypeMontant" => 0, "txMontant" => 5,  "txFormule" => "BY_STAY_TAX", "taxe_cumul" => [1], "txInc" => false],
-                ["id" => 3, "txName" => "Accommodation fees", "txTypeMontant" => 1, "txMontant" => 3, "txFormule" => "BY_NIGHT_TAX", "taxe_cumul" => [], "txInc" => false],
-                ["id" => 4, "txName" => "vat",            "txTypeMontant" => 0, "txMontant" => 10, "txFormule" => "BY_STAY_TAX", "taxe_cumul" => [1, 2, 3], "txInc" => false],
+                ["id" => 1, "txName" => "service charge", "txTypeMontant" => 0, "txMontant" => 10, "txFormule" => TaxeDetail::BY_STAY_TAX, "taxe_cumul" => [], "txInc" => false],
+                ["id" => 2, "txName" => "Tax City",       "txTypeMontant" => 0, "txMontant" => 5,  "txFormule" => TaxeDetail::BY_STAY_TAX, "taxe_cumul" => [1], "txInc" => false],
+                ["id" => 3, "txName" => "Accommodation fees", "txTypeMontant" => 1, "txMontant" => 3, "txFormule" => TaxeDetail::BY_NIGHT_TAX, "taxe_cumul" => [], "txInc" => false],
+                ["id" => 4, "txName" => "vat",            "txTypeMontant" => 0, "txMontant" => 10, "txFormule" => TaxeDetail::BY_STAY_TAX, "taxe_cumul" => [1, 2, 3], "txInc" => false],
             ]
         ];
 
@@ -169,7 +294,7 @@ class TaxesServiceV2ExamplesTest extends TestCase
             2,
             1,
             [
-                ["id" => 1, "txName" => "Service Charge", "txTypeMontant" => 1, "txMontant" => 20, "txFormule" => "BY_STAY_TAX", "taxe_cumul" => [], "txInc" => false],
+                ["id" => 1, "txName" => "Service Charge", "txTypeMontant" => 1, "txMontant" => 20, "txFormule" => TaxeDetail::BY_STAY_TAX, "taxe_cumul" => [], "txInc" => false],
             ]
         ];
 
@@ -182,11 +307,11 @@ class TaxesServiceV2ExamplesTest extends TestCase
             2,
             1,
             [
-                ["id" => 1, "txName" => "Tax ",  "txTypeMontant" => 0,  "txMontant" => 5,   "txFormule" => "BY_STAY_TAX", "taxe_cumul" => [], "txInc" => false],
-                ["id" => 2, "txName" => "VAT ",  "txTypeMontant" => 0,  "txMontant" => 5,   "txFormule" => "BY_STAY_TAX", "taxe_cumul" => [4, 5], "txInc" => false],
-                ["id" => 3, "txName" => "Taxe touristique", "txTypeMontant" => 1, "txMontant" => 10, "txFormule" => "BY_NIGHT_TAX", "taxe_cumul" => [], "txInc" => false],
-                ["id" => 4, "txName" => "Taxe destination", "txTypeMontant" => 1, "txMontant" => 10, "txFormule" => "BY_NIGHT_TAX", "taxe_cumul" => [], "txInc" => false],
-                ["id" => 5, "txName" => "Frais ménage",    "txTypeMontant" => 1, "txMontant" => 200, "txFormule" => "BY_STAY_TAX", "taxe_cumul" => [], "txInc" => false],
+                ["id" => 1, "txName" => "Tax ",  "txTypeMontant" => 0,  "txMontant" => 5,   "txFormule" => TaxeDetail::BY_STAY_TAX, "taxe_cumul" => [], "txInc" => false],
+                ["id" => 2, "txName" => "VAT ",  "txTypeMontant" => 0,  "txMontant" => 5,   "txFormule" => TaxeDetail::BY_STAY_TAX, "taxe_cumul" => [4, 5], "txInc" => false],
+                ["id" => 3, "txName" => "Taxe touristique", "txTypeMontant" => 1, "txMontant" => 10, "txFormule" => TaxeDetail::BY_NIGHT_TAX, "taxe_cumul" => [], "txInc" => false],
+                ["id" => 4, "txName" => "Taxe destination", "txTypeMontant" => 1, "txMontant" => 10, "txFormule" => TaxeDetail::BY_NIGHT_TAX, "taxe_cumul" => [], "txInc" => false],
+                ["id" => 5, "txName" => "Frais ménage",    "txTypeMontant" => 1, "txMontant" => 200, "txFormule" => TaxeDetail::BY_STAY_TAX, "taxe_cumul" => [], "txInc" => false],
             ]
         ];
 
@@ -199,8 +324,8 @@ class TaxesServiceV2ExamplesTest extends TestCase
             2,
             1,
             [
-                ["id" => 1, "txName" => "service charge", "txTypeMontant" => 0,   "txMontant" => 8.2, "txFormule" => "BY_STAY_TAX", "taxe_cumul" => [], "txInc" => false],
-                ["id" => 2, "txName" => "Taxe sur les bien et services", "txTypeMontant" => 0, "txMontant" => 12, "txFormule" => "BY_STAY_TAX", "taxe_cumul" => [], "txInc" => false, "rule" => [
+                ["id" => 1, "txName" => "service charge", "txTypeMontant" => 0,   "txMontant" => 8.2, "txFormule" => TaxeDetail::BY_STAY_TAX, "taxe_cumul" => [], "txInc" => false],
+                ["id" => 2, "txName" => "Taxe sur les bien et services", "txTypeMontant" => 0, "txMontant" => 12, "txFormule" => TaxeDetail::BY_STAY_TAX, "taxe_cumul" => [], "txInc" => false, "rule" => [
                     "type" => "tax_value_change_on_avg_price_per_night",
                     "threshold" => 7500,
                     "below" => ["txTypeMontant" => 0, "txMontant" => 12],
@@ -218,8 +343,8 @@ class TaxesServiceV2ExamplesTest extends TestCase
             2,
             3,
             [
-                ["id" => 2, "txName" => "Frais de service ", "txTypeMontant" => 1, "txMontant" => 34, "txFormule" => "BY_NIGHT_TAX", "taxe_cumul" => [], "txInc" => false],
-                ["id" => 1, "txName" => "Taxe sur les bien et services", "txTypeMontant" => 0, "txMontant" => 12, "txFormule" => "BY_STAY_TAX", "taxe_cumul" => [], "txInc" => false, "rule" => [
+                ["id" => 2, "txName" => "Frais de service ", "txTypeMontant" => 1, "txMontant" => 34, "txFormule" => TaxeDetail::BY_NIGHT_TAX, "taxe_cumul" => [], "txInc" => false],
+                ["id" => 1, "txName" => "Taxe sur les bien et services", "txTypeMontant" => 0, "txMontant" => 12, "txFormule" => TaxeDetail::BY_STAY_TAX, "taxe_cumul" => [], "txInc" => false, "rule" => [
                     "type" => "tax_value_change_on_avg_price_per_night",
                     "threshold" => 7499,
                     "below" => ["txTypeMontant" => 0, "txMontant" => 12],
@@ -238,9 +363,9 @@ class TaxesServiceV2ExamplesTest extends TestCase
             2,
             2,
             [
-                ["id" => 1, "txName" => "service charge", "txTypeMontant" => 1, "txMontant" => 1.0,  "txFormule" => "BY_NIGHT_AND_PERSON_TAX", "taxe_cumul" => [], "txInc" => false],
-                ["id" => 2, "txName" => "Tax City",       "txTypeMontant" => 1, "txMontant" => 1.6,  "txFormule" => "BY_NIGHT_AND_PERSON_TAX", "taxe_cumul" => [], "txInc" => false],
-                ["id" => 3, "txName" => "VAT",            "txTypeMontant" => 0,  "txMontant" => 10,   "txFormule" => "BY_STAY_TAX", "taxe_cumul" => [], "txInc" => true],
+                ["id" => 1, "txName" => "service charge", "txTypeMontant" => 1, "txMontant" => 1.0,  "txFormule" => TaxeDetail::BY_NIGHT_AND_PERSON_TAX, "taxe_cumul" => [], "txInc" => false],
+                ["id" => 2, "txName" => "Tax City",       "txTypeMontant" => 1, "txMontant" => 1.6,  "txFormule" => TaxeDetail::BY_NIGHT_AND_PERSON_TAX, "taxe_cumul" => [], "txInc" => false],
+                ["id" => 3, "txName" => "VAT",            "txTypeMontant" => 0,  "txMontant" => 10,   "txFormule" => TaxeDetail::BY_STAY_TAX, "taxe_cumul" => [], "txInc" => true],
             ]
         ];
 
@@ -252,8 +377,8 @@ class TaxesServiceV2ExamplesTest extends TestCase
             2,
             2,
             [
-                ["id" => 1, "txName" => "Tax City",  "txTypeMontant" => 1, "txMontant" => 1.6, "txFormule" => "BY_NIGHT_AND_PERSON_TAX", "taxe_cumul" => [], "txInc" => false],
-                ["id" => 2, "txName" => "VAT",       "txTypeMontant" => 0,  "txMontant" => 10,  "txFormule" => "BY_STAY_TAX", "taxe_cumul" => [], "txInc" => true],
+                ["id" => 1, "txName" => "Tax City",  "txTypeMontant" => 1, "txMontant" => 1.6, "txFormule" => TaxeDetail::BY_NIGHT_AND_PERSON_TAX, "taxe_cumul" => [], "txInc" => false],
+                ["id" => 2, "txName" => "VAT",       "txTypeMontant" => 0,  "txMontant" => 10,  "txFormule" => TaxeDetail::BY_STAY_TAX, "taxe_cumul" => [], "txInc" => true],
             ]
         ];
 
@@ -265,8 +390,8 @@ class TaxesServiceV2ExamplesTest extends TestCase
             2,
             2,
             [
-                ["id" => 1, "txName" => "Tax City", "txTypeMontant" => 1, "txMontant" => 2,  "txFormule" => "BY_NIGHT_AND_PERSON_TAX", "taxe_cumul" => [], "txInc" => true],
-                ["id" => 2, "txName" => "VAT",      "txTypeMontant" => 0,  "txMontant" => 10, "txFormule" => "BY_STAY_TAX", "taxe_cumul" => [], "txInc" => true],
+                ["id" => 1, "txName" => "Tax City", "txTypeMontant" => 1, "txMontant" => 2,  "txFormule" => TaxeDetail::BY_NIGHT_AND_PERSON_TAX, "taxe_cumul" => [], "txInc" => true],
+                ["id" => 2, "txName" => "VAT",      "txTypeMontant" => 0,  "txMontant" => 10, "txFormule" => TaxeDetail::BY_STAY_TAX, "taxe_cumul" => [], "txInc" => true],
             ]
         ];
 
@@ -279,8 +404,8 @@ class TaxesServiceV2ExamplesTest extends TestCase
             2,
             2,
             [
-                ["id" => 1, "txName" => "Tax City", "txTypeMontant" => 1, "txMontant" => 8.45, "txFormule" => "BY_NIGHT_AND_PERSON_TAX", "taxe_cumul" => [], "txInc" => false],
-                ["id" => 2, "txName" => "VAT",      "txTypeMontant" => 0,  "txMontant" => 10,   "txFormule" => "BY_STAY_TAX ", "taxe_cumul" => [], "txInc" => true],
+                ["id" => 1, "txName" => "Tax City", "txTypeMontant" => 1, "txMontant" => 8.45, "txFormule" => TaxeDetail::BY_NIGHT_AND_PERSON_TAX, "taxe_cumul" => [], "txInc" => false],
+                ["id" => 2, "txName" => "VAT",      "txTypeMontant" => 0,  "txMontant" => 10,   "txFormule" => TaxeDetail::BY_STAY_TAX, "taxe_cumul" => [], "txInc" => true],
             ]
         ];
 
@@ -292,7 +417,7 @@ class TaxesServiceV2ExamplesTest extends TestCase
             2,
             2,
             [
-                ["id" => 1, "txName" => "Tax City", "txTypeMontant" => 1, "txMontant" => 1.1, "txFormule" => "BY_NIGHT_AND_PERSON_TAX", "taxe_cumul" => [], "txInc" => false],
+                ["id" => 1, "txName" => "Tax City", "txTypeMontant" => 1, "txMontant" => 1.1, "txFormule" => TaxeDetail::BY_NIGHT_AND_PERSON_TAX, "taxe_cumul" => [], "txInc" => false],
             ]
         ];
 
@@ -305,8 +430,8 @@ class TaxesServiceV2ExamplesTest extends TestCase
             2,
             1,
             [
-                ["id" => 1, "txName" => "Tax City", "txTypeMontant" => 1, "txMontant" => 1.32, "txFormule" => "BY_NIGHT_AND_PERSON_TAX", "taxe_cumul" => [], "txInc" => false],
-                ["id" => 2, "txName" => "VAT",      "txTypeMontant" => 0,  "txMontant" => 10,  "txFormule" => "BY_STAY_TAX", "taxe_cumul" => [], "txInc" => true],
+                ["id" => 1, "txName" => "Tax City", "txTypeMontant" => 1, "txMontant" => 1.32, "txFormule" => TaxeDetail::BY_NIGHT_AND_PERSON_TAX, "taxe_cumul" => [], "txInc" => false],
+                ["id" => 2, "txName" => "VAT",      "txTypeMontant" => 0,  "txMontant" => 10,  "txFormule" => TaxeDetail::BY_STAY_TAX, "taxe_cumul" => [], "txInc" => true],
             ]
         ];
 
@@ -318,7 +443,7 @@ class TaxesServiceV2ExamplesTest extends TestCase
             2,
             3,
             [
-                ["id" => 1, "txName" => "VAT", "txTypeMontant" => 0, "txMontant" => 10, "txFormule" => "BY_STAY_TAX", "taxe_cumul" => [], "txInc" => true],
+                ["id" => 1, "txName" => "VAT", "txTypeMontant" => 0, "txMontant" => 10, "txFormule" => TaxeDetail::BY_STAY_TAX, "taxe_cumul" => [], "txInc" => true],
             ]
         ];
 
@@ -331,9 +456,9 @@ class TaxesServiceV2ExamplesTest extends TestCase
             2,
             1,
             [
-                ["id" => 1, "txName" => "Tax ",     "txTypeMontant" => 0, "txMontant" => 14, "txFormule" => "BY_STAY_TAX", "taxe_cumul" => [], "txInc" => false],
-                ["id" => 2, "txName" => "Tax City", "txTypeMontant" => 0, "txMontant" => 1,  "txFormule" => "BY_STAY_TAX", "taxe_cumul" => [], "txInc" => false],
-                ["id" => 3, "txName" => "service fees", "txTypeMontant" => 0, "txMontant" => 12,  "txFormule" => "BY_STAY_TAX", "taxe_cumul" => [1], "txInc" => false],
+                ["id" => 1, "txName" => "Tax ",     "txTypeMontant" => 0, "txMontant" => 14, "txFormule" => TaxeDetail::BY_STAY_TAX, "taxe_cumul" => [], "txInc" => false],
+                ["id" => 2, "txName" => "Tax City", "txTypeMontant" => 0, "txMontant" => 1,  "txFormule" => TaxeDetail::BY_STAY_TAX, "taxe_cumul" => [], "txInc" => false],
+                ["id" => 3, "txName" => "service fees", "txTypeMontant" => 0, "txMontant" => 12,  "txFormule" => TaxeDetail::BY_STAY_TAX, "taxe_cumul" => [1], "txInc" => false],
             ]
         ];
 
@@ -346,8 +471,8 @@ class TaxesServiceV2ExamplesTest extends TestCase
             2,
             1,
             [
-                ["id" => 1, "txName" => "Tax City", "txTypeMontant" => 0, "txMontant" => 7.5, "txFormule" => "BY_STAY_TAX", "taxe_cumul" => [2], "txInc" => false],
-                ["id" => 2, "txName" => "VAT",      "txTypeMontant" => 0, "txMontant" => 7,   "txFormule" => "BY_STAY_TAX ", "taxe_cumul" => [], "txInc" => true],
+                ["id" => 1, "txName" => "Tax City", "txTypeMontant" => 0, "txMontant" => 7.5, "txFormule" => TaxeDetail::BY_STAY_TAX, "taxe_cumul" => [2], "txInc" => false],
+                ["id" => 2, "txName" => "VAT",      "txTypeMontant" => 0, "txMontant" => 7,   "txFormule" => TaxeDetail::BY_STAY_TAX, "taxe_cumul" => [], "txInc" => true],
             ]
         ];
 
@@ -359,7 +484,7 @@ class TaxesServiceV2ExamplesTest extends TestCase
             2,
             1,
             [
-                ["id" => 1, "txName" => "VAT", "txTypeMontant" => 0, "txMontant" => 7, "txFormule" => "BY_STAY_TAX ", "taxe_cumul" => [], "txInc" => true],
+                ["id" => 1, "txName" => "VAT", "txTypeMontant" => 0, "txMontant" => 7, "txFormule" => TaxeDetail::BY_STAY_TAX, "taxe_cumul" => [], "txInc" => true],
             ]
         ];
 
@@ -371,8 +496,8 @@ class TaxesServiceV2ExamplesTest extends TestCase
             2,
             1,
             [
-                ["id" => 1, "txName" => "Tax City", "txTypeMontant" => 0, "txMontant" => 5, "txFormule" => "BY_STAY_TAX", "taxe_cumul" => [2], "txInc" => true],
-                ["id" => 2, "txName" => "VAT",      "txTypeMontant" => 0, "txMontant" => 7, "txFormule" => "BY_STAY_TAX ", "taxe_cumul" => [], "txInc" => true],
+                ["id" => 1, "txName" => "Tax City", "txTypeMontant" => 0, "txMontant" => 5, "txFormule" => TaxeDetail::BY_STAY_TAX, "taxe_cumul" => [2], "txInc" => true],
+                ["id" => 2, "txName" => "VAT",      "txTypeMontant" => 0, "txMontant" => 7, "txFormule" => TaxeDetail::BY_STAY_TAX, "taxe_cumul" => [], "txInc" => true],
             ]
         ];
 
@@ -385,8 +510,8 @@ class TaxesServiceV2ExamplesTest extends TestCase
             2,
             1,
             [
-                ["id" => 1, "txName" => "Tax",               "txTypeMontant" => 0, "txMontant" => 13,   "txFormule" => "BY_STAY_TAX", "taxe_cumul" => [2], "txInc" => false],
-                ["id" => 2, "txName" => "Municipality fee",  "txTypeMontant" => 0, "txMontant" => 5,    "txFormule" => "BY_STAY_TAX", "taxe_cumul" => [], "txInc" => true],
+                ["id" => 1, "txName" => "Tax",               "txTypeMontant" => 0, "txMontant" => 13,   "txFormule" => TaxeDetail::BY_STAY_TAX, "taxe_cumul" => [2], "txInc" => false],
+                ["id" => 2, "txName" => "Municipality fee",  "txTypeMontant" => 0, "txMontant" => 5,    "txFormule" => TaxeDetail::BY_STAY_TAX, "taxe_cumul" => [], "txInc" => true],
             ]
         ];
 
@@ -398,9 +523,9 @@ class TaxesServiceV2ExamplesTest extends TestCase
             2,
             4,
             [
-                ["id" => 1, "txName" => "tax",                "txTypeMontant" => 0, "txMontant" => 14.98, "txFormule" => "BY_STAY_TAX", "taxe_cumul" => [2, 3], "txInc" => false],
-                ["id" => 2, "txName" => "environment fee",    "txTypeMontant" => 0, "txMontant" => 1.30, "txFormule" => "BY_STAY_TAX", "taxe_cumul" => [], "txInc" => false],
-                ["id" => 3, "txName" => "city tax",           "txTypeMontant" => 0, "txMontant" => 3.50, "txFormule" => "BY_STAY_TAX", "taxe_cumul" => [], "txInc" => false],
+                ["id" => 1, "txName" => "tax",                "txTypeMontant" => 0, "txMontant" => 14.98, "txFormule" => TaxeDetail::BY_STAY_TAX, "taxe_cumul" => [2, 3], "txInc" => false],
+                ["id" => 2, "txName" => "environment fee",    "txTypeMontant" => 0, "txMontant" => 1.30, "txFormule" => TaxeDetail::BY_STAY_TAX, "taxe_cumul" => [], "txInc" => false],
+                ["id" => 3, "txName" => "city tax",           "txTypeMontant" => 0, "txMontant" => 3.50, "txFormule" => TaxeDetail::BY_STAY_TAX, "taxe_cumul" => [], "txInc" => false],
             ]
         ];
 
@@ -412,7 +537,7 @@ class TaxesServiceV2ExamplesTest extends TestCase
             2,
             2,
             [
-                ["id" => 1, "txName" => "vat", "txTypeMontant" => 0, "txMontant" => 19, "txFormule" => "BY_STAY_TAX", "taxe_cumul" => [], "txInc" => false],
+                ["id" => 1, "txName" => "vat", "txTypeMontant" => 0, "txMontant" => 19, "txFormule" => TaxeDetail::BY_STAY_TAX, "taxe_cumul" => [], "txInc" => false],
             ]
         ];
 
@@ -425,10 +550,10 @@ class TaxesServiceV2ExamplesTest extends TestCase
             2,
             1,
             [
-                ["id" => 1, "txName" => "Tax ", "txTypeMontant" => 0, "txMontant" => 13,   "txFormule" => "BY_STAY_TAX", "taxe_cumul" => [], "txInc" => false],
-                ["id" => 2, "txName" => "Taxe immobilière", "txTypeMontant" => 0, "txMontant" => 2, "txFormule" => "BY_STAY_TAX", "taxe_cumul" => [], "txInc" => false],
-                ["id" => 3, "txName" => "Taxe gouvernementale", "txTypeMontant" => 0, "txMontant" => 0.24, "txFormule" => "BY_STAY_TAX", "taxe_cumul" => [], "txInc" => false],
-                ["id" => 4, "txName" => "Frais de service", "txTypeMontant" => 1, "txMontant" => 70, "txFormule" => "BY_NIGHT_TAX", "taxe_cumul" => [], "txInc" => false],
+                ["id" => 1, "txName" => "Tax ", "txTypeMontant" => 0, "txMontant" => 13,   "txFormule" => TaxeDetail::BY_STAY_TAX, "taxe_cumul" => [], "txInc" => false],
+                ["id" => 2, "txName" => "Taxe immobilière", "txTypeMontant" => 0, "txMontant" => 2, "txFormule" => TaxeDetail::BY_STAY_TAX, "taxe_cumul" => [], "txInc" => false],
+                ["id" => 3, "txName" => "Taxe gouvernementale", "txTypeMontant" => 0, "txMontant" => 0.24, "txFormule" => TaxeDetail::BY_STAY_TAX, "taxe_cumul" => [], "txInc" => false],
+                ["id" => 4, "txName" => "Frais de service", "txTypeMontant" => 1, "txMontant" => 70, "txFormule" => TaxeDetail::BY_NIGHT_TAX, "taxe_cumul" => [], "txInc" => false],
             ]
         ];
 
@@ -440,8 +565,8 @@ class TaxesServiceV2ExamplesTest extends TestCase
             2,
             1,
             [
-                ["id" => 1, "txName" => "Tax ", "txTypeMontant" => 0, "txMontant" => 15.20, "txFormule" => "BY_STAY_TAX", "taxe_cumul" => [], "txInc" => false],
-                ["id" => 2, "txName" => "Frais de service", "txTypeMontant" => 1, "txMontant" => 30, "txFormule" => "BY_NIGHT_TAX", "taxe_cumul" => [], "txInc" => false],
+                ["id" => 1, "txName" => "Tax ", "txTypeMontant" => 0, "txMontant" => 15.20, "txFormule" => TaxeDetail::BY_STAY_TAX, "taxe_cumul" => [], "txInc" => false],
+                ["id" => 2, "txName" => "Frais de service", "txTypeMontant" => 1, "txMontant" => 30, "txFormule" => TaxeDetail::BY_NIGHT_TAX, "taxe_cumul" => [], "txInc" => false],
             ]
         ];
 
@@ -453,7 +578,7 @@ class TaxesServiceV2ExamplesTest extends TestCase
             2,
             1,
             [
-                ["id" => 1, "txName" => "Tax ", "txTypeMontant" => 0, "txMontant" => 15, "txFormule" => "BY_STAY_TAX", "taxe_cumul" => [], "txInc" => false],
+                ["id" => 1, "txName" => "Tax ", "txTypeMontant" => 0, "txMontant" => 15, "txFormule" => TaxeDetail::BY_STAY_TAX, "taxe_cumul" => [], "txInc" => false],
             ]
         ];
 
@@ -465,9 +590,9 @@ class TaxesServiceV2ExamplesTest extends TestCase
             2,
             1,
             [
-                ["id" => 1, "txName" => "Tax ", "txTypeMontant" => 0, "txMontant" => 14.50, "txFormule" => "BY_STAY_TAX", "taxe_cumul" => [], "txInc" => false],
-                ["id" => 2, "txName" => "frais de menage", "txTypeMontant" => 1, "txMontant" => 155, "txFormule" => "BY_STAY_TAX", "taxe_cumul" => [], "txInc" => false],
-                ["id" => 3, "txName" => "frais de service", "txTypeMontant" => 1, "txMontant" => 15, "txFormule" => "BY_STAY_TAX", "taxe_cumul" => [], "txInc" => false],
+                ["id" => 1, "txName" => "Tax ", "txTypeMontant" => 0, "txMontant" => 14.50, "txFormule" => TaxeDetail::BY_STAY_TAX, "taxe_cumul" => [], "txInc" => false],
+                ["id" => 2, "txName" => "frais de menage", "txTypeMontant" => 1, "txMontant" => 155, "txFormule" => TaxeDetail::BY_STAY_TAX, "taxe_cumul" => [], "txInc" => false],
+                ["id" => 3, "txName" => "frais de service", "txTypeMontant" => 1, "txMontant" => 15, "txFormule" => TaxeDetail::BY_STAY_TAX, "taxe_cumul" => [], "txInc" => false],
             ]
         ];
 
@@ -479,9 +604,9 @@ class TaxesServiceV2ExamplesTest extends TestCase
             2,
             1,
             [
-                ["id" => 1, "txName" => "Tax ", "txTypeMontant" => 0, "txMontant" => 13,   "txFormule" => "BY_STAY_TAX", "taxe_cumul" => [], "txInc" => false],
-                ["id" => 2, "txName" => "taxe de sejour", "txTypeMontant" => 0, "txMontant" => 2, "txFormule" => "BY_STAY_TAX", "taxe_cumul" => [], "txInc" => false],
-                ["id" => 3, "txName" => "destination", "txTypeMontant" => 0, "txMontant" => 0.2, "txFormule" => "BY_STAY_TAX", "taxe_cumul" => [], "txInc" => false],
+                ["id" => 1, "txName" => "Tax ", "txTypeMontant" => 0, "txMontant" => 13,   "txFormule" => TaxeDetail::BY_STAY_TAX, "taxe_cumul" => [], "txInc" => false],
+                ["id" => 2, "txName" => "taxe de sejour", "txTypeMontant" => 0, "txMontant" => 2, "txFormule" => TaxeDetail::BY_STAY_TAX, "taxe_cumul" => [], "txInc" => false],
+                ["id" => 3, "txName" => "destination", "txTypeMontant" => 0, "txMontant" => 0.2, "txFormule" => TaxeDetail::BY_STAY_TAX, "taxe_cumul" => [], "txInc" => false],
             ]
         ];
 
@@ -493,9 +618,9 @@ class TaxesServiceV2ExamplesTest extends TestCase
             2,
             3,
             [
-                ["id" => 1, "txName" => "Tax ", "txTypeMontant" => 0, "txMontant" => 11, "txFormule" => "BY_STAY_TAX", "taxe_cumul" => [2, 3], "txInc" => false],
-                ["id" => 2, "txName" => "frais de menage", "txTypeMontant" => 1, "txMontant" => 100, "txFormule" => "BY_STAY_TAX", "taxe_cumul" => [], "txInc" => false],
-                ["id" => 3, "txName" => "destination", "txTypeMontant" => 1, "txMontant" => 25, "txFormule" => "BY_NIGHT_TAX", "taxe_cumul" => [], "txInc" => false],
+                ["id" => 1, "txName" => "Tax ", "txTypeMontant" => 0, "txMontant" => 11, "txFormule" => TaxeDetail::BY_STAY_TAX, "taxe_cumul" => [2, 3], "txInc" => false],
+                ["id" => 2, "txName" => "frais de menage", "txTypeMontant" => 1, "txMontant" => 100, "txFormule" => TaxeDetail::BY_STAY_TAX, "taxe_cumul" => [], "txInc" => false],
+                ["id" => 3, "txName" => "destination", "txTypeMontant" => 1, "txMontant" => 25, "txFormule" => TaxeDetail::BY_NIGHT_TAX, "taxe_cumul" => [], "txInc" => false],
             ]
         ];
 
@@ -507,10 +632,10 @@ class TaxesServiceV2ExamplesTest extends TestCase
             4,
             5,
             [
-                ["id" => 1, "txName" => "Tax ", "txTypeMontant" => 0, "txMontant" => 7.75, "txFormule" => "BY_STAY_TAX", "taxe_cumul" => [], "txInc" => false],
-                ["id" => 2, "txName" => "frais gouvernementale", "txTypeMontant" => 0, "txMontant" => 0.78, "txFormule" => "BY_STAY_TAX", "taxe_cumul" => [], "txInc" => false],
-                ["id" => 3, "txName" => "frais service", "txTypeMontant" => 0, "txMontant" => 0.75, "txFormule" => "BY_STAY_TAX", "taxe_cumul" => [1, 2], "txInc" => false],
-                ["id" => 4, "txName" => "taxe de sejour", "txTypeMontant" => 0, "txMontant" => 9, "txFormule" => "BY_STAY_TAX", "taxe_cumul" => [], "txInc" => false],
+                ["id" => 1, "txName" => "Tax ", "txTypeMontant" => 0, "txMontant" => 7.75, "txFormule" => TaxeDetail::BY_STAY_TAX, "taxe_cumul" => [], "txInc" => false],
+                ["id" => 2, "txName" => "frais gouvernementale", "txTypeMontant" => 0, "txMontant" => 0.78, "txFormule" => TaxeDetail::BY_STAY_TAX, "taxe_cumul" => [], "txInc" => false],
+                ["id" => 3, "txName" => "frais service", "txTypeMontant" => 0, "txMontant" => 0.75, "txFormule" => TaxeDetail::BY_STAY_TAX, "taxe_cumul" => [1, 2], "txInc" => false],
+                ["id" => 4, "txName" => "taxe de sejour", "txTypeMontant" => 0, "txMontant" => 9, "txFormule" => TaxeDetail::BY_STAY_TAX, "taxe_cumul" => [], "txInc" => false],
             ]
         ];
 
@@ -523,8 +648,8 @@ class TaxesServiceV2ExamplesTest extends TestCase
             2,
             1,
             [
-                ["id" => 1, "txName" => "VAT", "txTypeMontant" => 0, "txMontant" => 6, "txFormule" => "BY_STAY_TAX", "taxe_cumul" => [], "txInc" => true],
-                ["id" => 2, "txName" => "Tax City", "txTypeMontant" => 1, "txMontant" => 0.3, "txFormule" => "BY_NIGHT_AND_PERSON_TAX", "taxe_cumul" => [], "txInc" => false],
+                ["id" => 1, "txName" => "VAT", "txTypeMontant" => 0, "txMontant" => 6, "txFormule" => TaxeDetail::BY_STAY_TAX, "taxe_cumul" => [], "txInc" => true],
+                ["id" => 2, "txName" => "Tax City", "txTypeMontant" => 1, "txMontant" => 0.3, "txFormule" => TaxeDetail::BY_NIGHT_AND_PERSON_TAX, "taxe_cumul" => [], "txInc" => false],
             ]
         ];
 
@@ -537,7 +662,7 @@ class TaxesServiceV2ExamplesTest extends TestCase
             2,
             1,
             [
-                ["id" => 1, "txName" => "VAT", "txTypeMontant" => 0, "txMontant" => 15, "txFormule" => "BY_STAY_TAX", "taxe_cumul" => [], "txInc" => false],
+                ["id" => 1, "txName" => "VAT", "txTypeMontant" => 0, "txMontant" => 15, "txFormule" => TaxeDetail::BY_STAY_TAX, "taxe_cumul" => [], "txInc" => false],
             ]
         ];
 
@@ -549,8 +674,8 @@ class TaxesServiceV2ExamplesTest extends TestCase
             2,
             6,
             [
-                ["id" => 1, "txName" => "VAT", "txTypeMontant" => 0, "txMontant" => 15, "txFormule" => "BY_STAY_TAX", "taxe_cumul" => [], "txInc" => false],
-                ["id" => 2, "txName" => "Tax municipality", "txTypeMontant" => 0, "txMontant" => 5, "txFormule" => "BY_STAY_TAX", "taxe_cumul" => [1], "txInc" => false],
+                ["id" => 1, "txName" => "VAT", "txTypeMontant" => 0, "txMontant" => 15, "txFormule" => TaxeDetail::BY_STAY_TAX, "taxe_cumul" => [], "txInc" => false],
+                ["id" => 2, "txName" => "Tax municipality", "txTypeMontant" => 0, "txMontant" => 5, "txFormule" => TaxeDetail::BY_STAY_TAX, "taxe_cumul" => [1], "txInc" => false],
             ]
         ];
 
@@ -563,8 +688,8 @@ class TaxesServiceV2ExamplesTest extends TestCase
             2,
             1,
             [
-                ["id" => 1, "txName" => "VAT", "txTypeMontant" => 0, "txMontant" => 10, "txFormule" => "BY_STAY_TAX", "taxe_cumul" => [], "txInc" => true],
-                ["id" => 2, "txName" => "Tax City", "txTypeMontant" => 1, "txMontant" => 1000, "txFormule" => "BY_NIGHT_AND_PERSON_TAX", "taxe_cumul" => [], "txInc" => false],
+                ["id" => 1, "txName" => "VAT", "txTypeMontant" => 0, "txMontant" => 10, "txFormule" => TaxeDetail::BY_STAY_TAX, "taxe_cumul" => [], "txInc" => true],
+                ["id" => 2, "txName" => "Tax City", "txTypeMontant" => 1, "txMontant" => 1000, "txFormule" => TaxeDetail::BY_NIGHT_AND_PERSON_TAX, "taxe_cumul" => [], "txInc" => false],
             ]
         ];
 
@@ -577,7 +702,7 @@ class TaxesServiceV2ExamplesTest extends TestCase
             2,
             1,
             [
-                ["id" => 1, "txName" => "VAT", "txTypeMontant" => 0, "txMontant" => 5, "txFormule" => "BY_STAY_TAX", "taxe_cumul" => [], "txInc" => false],
+                ["id" => 1, "txName" => "VAT", "txTypeMontant" => 0, "txMontant" => 5, "txFormule" => TaxeDetail::BY_STAY_TAX, "taxe_cumul" => [], "txInc" => false],
             ]
         ];
 
@@ -589,9 +714,9 @@ class TaxesServiceV2ExamplesTest extends TestCase
             2,
             1,
             [
-                ["id" => 1, "txName" => "VAT", "txTypeMontant" => 0, "txMontant" => 5,  "txFormule" => "BY_STAY_TAX", "taxe_cumul" => [], "txInc" => true],
-                ["id" => 2, "txName" => "property service", "txTypeMontant" => 0, "txMontant" => 10, "txFormule" => "BY_STAY_TAX", "taxe_cumul" => [1], "txInc" => true],
-                ["id" => 3, "txName" => "tourism fee",    "txTypeMontant" => 1, "txMontant" => 13, "txFormule" => "BY_NIGHT_TAX", "taxe_cumul" => [], "txInc" => true],
+                ["id" => 1, "txName" => "VAT", "txTypeMontant" => 0, "txMontant" => 5,  "txFormule" => TaxeDetail::BY_STAY_TAX, "taxe_cumul" => [], "txInc" => true],
+                ["id" => 2, "txName" => "property service", "txTypeMontant" => 0, "txMontant" => 10, "txFormule" => TaxeDetail::BY_STAY_TAX, "taxe_cumul" => [1], "txInc" => true],
+                ["id" => 3, "txName" => "tourism fee",    "txTypeMontant" => 1, "txMontant" => 13, "txFormule" => TaxeDetail::BY_NIGHT_TAX, "taxe_cumul" => [], "txInc" => true],
             ]
         ];
 
@@ -614,8 +739,8 @@ class TaxesServiceV2ExamplesTest extends TestCase
             3,
             3,
             [
-                ["id" => 1, "txName" => "VAT", "txTypeMontant" => 0, "txMontant" => 7,  "txFormule" => "BY_STAY_TAX", "taxe_cumul" => [], "txInc" => true],
-                ["id" => 2, "txName" => "service charge", "txTypeMontant" => 0, "txMontant" => 10, "txFormule" => "BY_STAY_TAX", "taxe_cumul" => [1], "txInc" => true],
+                ["id" => 1, "txName" => "VAT", "txTypeMontant" => 0, "txMontant" => 7,  "txFormule" => TaxeDetail::BY_STAY_TAX, "taxe_cumul" => [], "txInc" => true],
+                ["id" => 2, "txName" => "service charge", "txTypeMontant" => 0, "txMontant" => 10, "txFormule" => TaxeDetail::BY_STAY_TAX, "taxe_cumul" => [1], "txInc" => true],
             ]
         ];
 
@@ -627,9 +752,9 @@ class TaxesServiceV2ExamplesTest extends TestCase
             2,
             1,
             [
-                ["id" => 1, "txName" => "VAT", "txTypeMontant" => 0, "txMontant" => 7,   "txFormule" => "BY_STAY_TAX", "taxe_cumul" => [], "txInc" => false],
-                ["id" => 2, "txName" => "service charge", "txTypeMontant" => 0, "txMontant" => 10.7, "txFormule" => "BY_STAY_TAX", "taxe_cumul" => [], "txInc" => false],
-                ["id" => 3, "txName" => "city tax",      "txTypeMontant" => 0, "txMontant" => 2,  "txFormule" => "BY_STAY_TAX", "taxe_cumul" => [], "txInc" => false],
+                ["id" => 1, "txName" => "VAT", "txTypeMontant" => 0, "txMontant" => 7,   "txFormule" => TaxeDetail::BY_STAY_TAX, "taxe_cumul" => [], "txInc" => false],
+                ["id" => 2, "txName" => "service charge", "txTypeMontant" => 0, "txMontant" => 10.7, "txFormule" => TaxeDetail::BY_STAY_TAX, "taxe_cumul" => [], "txInc" => false],
+                ["id" => 3, "txName" => "city tax",      "txTypeMontant" => 0, "txMontant" => 2,  "txFormule" => TaxeDetail::BY_STAY_TAX, "taxe_cumul" => [], "txInc" => false],
             ]
         ];
 
@@ -642,7 +767,7 @@ class TaxesServiceV2ExamplesTest extends TestCase
             2,
             1,
             [
-                ["id" => 1, "txName" => "VAT", "txTypeMontant" => 0, "txMontant" => 20, "txFormule" => "BY_STAY_TAX", "taxe_cumul" => [], "txInc" => true],
+                ["id" => 1, "txName" => "VAT", "txTypeMontant" => 0, "txMontant" => 20, "txFormule" => TaxeDetail::BY_STAY_TAX, "taxe_cumul" => [], "txInc" => true],
             ]
         ];
 
@@ -654,8 +779,8 @@ class TaxesServiceV2ExamplesTest extends TestCase
             2,
             2,
             [
-                ["id" => 1, "txName" => "VAT", "txTypeMontant" => 0, "txMontant" => 20, "txFormule" => "BY_STAY_TAX", "taxe_cumul" => [], "txInc" => true],
-                ["id" => 2, "txName" => "tax city", "txTypeMontant" => 1, "txMontant" => 125, "txFormule" => "BY_STAY_TAX", "taxe_cumul" => [], "txInc" => false],
+                ["id" => 1, "txName" => "VAT", "txTypeMontant" => 0, "txMontant" => 20, "txFormule" => TaxeDetail::BY_STAY_TAX, "taxe_cumul" => [], "txInc" => true],
+                ["id" => 2, "txName" => "tax city", "txTypeMontant" => 1, "txMontant" => 125, "txFormule" => TaxeDetail::BY_STAY_TAX, "taxe_cumul" => [], "txInc" => false],
             ]
         ];
 
@@ -668,8 +793,8 @@ class TaxesServiceV2ExamplesTest extends TestCase
             2,
             1,
             [
-                ["id" => 1, "txName" => "VAT", "txTypeMontant" => 0, "txMontant" => 10, "txFormule" => "BY_STAY_TAX", "taxe_cumul" => [], "txInc" => true],
-                ["id" => 2, "txName" => "tax city", "txTypeMontant" => 0, "txMontant" => 10, "txFormule" => "BY_STAY_TAX", "taxe_cumul" => [], "txInc" => false],
+                ["id" => 1, "txName" => "VAT", "txTypeMontant" => 0, "txMontant" => 10, "txFormule" => TaxeDetail::BY_STAY_TAX, "taxe_cumul" => [], "txInc" => true],
+                ["id" => 2, "txName" => "tax city", "txTypeMontant" => 0, "txMontant" => 10, "txFormule" => TaxeDetail::BY_STAY_TAX, "taxe_cumul" => [], "txInc" => false],
             ]
         ];
 
@@ -682,9 +807,9 @@ class TaxesServiceV2ExamplesTest extends TestCase
             2,
             1,
             [
-                ["id" => 1, "txName" => "VAT", "txTypeMontant" => 0, "txMontant" => 12,  "txFormule" => "BY_STAY_TAX", "taxe_cumul" => [], "txInc" => false],
-                ["id" => 2, "txName" => "service charge", "txTypeMontant" => 0, "txMontant" => 10, "txFormule" => "BY_STAY_TAX", "taxe_cumul" => [], "txInc" => false],
-                ["id" => 3, "txName" => "city tax", "txTypeMontant" => 0, "txMontant" => 0.6, "txFormule" => "BY_STAY_TAX", "taxe_cumul" => [], "txInc" => false],
+                ["id" => 1, "txName" => "VAT", "txTypeMontant" => 0, "txMontant" => 12,  "txFormule" => TaxeDetail::BY_STAY_TAX, "taxe_cumul" => [], "txInc" => false],
+                ["id" => 2, "txName" => "service charge", "txTypeMontant" => 0, "txMontant" => 10, "txFormule" => TaxeDetail::BY_STAY_TAX, "taxe_cumul" => [], "txInc" => false],
+                ["id" => 3, "txName" => "city tax", "txTypeMontant" => 0, "txMontant" => 0.6, "txFormule" => TaxeDetail::BY_STAY_TAX, "taxe_cumul" => [], "txInc" => false],
             ]
         ];
 
@@ -697,8 +822,8 @@ class TaxesServiceV2ExamplesTest extends TestCase
             3,
             2,
             [
-                ["id" => 1, "txName" => "VAT", "txTypeMontant" => 0, "txMontant" => 10, "txFormule" => "BY_STAY_TAX", "taxe_cumul" => [], "txInc" => true],
-                ["id" => 2, "txName" => "service charge", "txTypeMontant" => 0, "txMontant" => 5, "txFormule" => "BY_STAY_TAX", "taxe_cumul" => [1], "txInc" => false],
+                ["id" => 1, "txName" => "VAT", "txTypeMontant" => 0, "txMontant" => 10, "txFormule" => TaxeDetail::BY_STAY_TAX, "taxe_cumul" => [], "txInc" => true],
+                ["id" => 2, "txName" => "service charge", "txTypeMontant" => 0, "txMontant" => 5, "txFormule" => TaxeDetail::BY_STAY_TAX, "taxe_cumul" => [1], "txInc" => false],
             ]
         ];
 
@@ -710,8 +835,8 @@ class TaxesServiceV2ExamplesTest extends TestCase
             2,
             3,
             [
-                ["id" => 1, "txName" => "service charge", "txTypeMontant" => 0, "txMontant" => 7, "txFormule" => "BY_STAY_TAX", "taxe_cumul" => [], "txInc" => false],
-                ["id" => 2, "txName" => "city tax", "txTypeMontant" => 0, "txMontant" => 7, "txFormule" => "BY_STAY_TAX", "taxe_cumul" => [1], "txInc" => false],
+                ["id" => 1, "txName" => "service charge", "txTypeMontant" => 0, "txMontant" => 7, "txFormule" => TaxeDetail::BY_STAY_TAX, "taxe_cumul" => [], "txInc" => false],
+                ["id" => 2, "txName" => "city tax", "txTypeMontant" => 0, "txMontant" => 7, "txFormule" => TaxeDetail::BY_STAY_TAX, "taxe_cumul" => [1], "txInc" => false],
             ]
         ];
 
@@ -724,9 +849,9 @@ class TaxesServiceV2ExamplesTest extends TestCase
             2,
             2,
             [
-                ["id" => 1, "txName" => "VAT", "txTypeMontant" => 0, "txMontant" => 18, "txFormule" => "BY_STAY_TAX", "taxe_cumul" => [], "txInc" => true],
-                ["id" => 2, "txName" => "resort fee", "txTypeMontant" => 1, "txMontant" => 25, "txFormule" => "BY_STAY_TAX", "taxe_cumul" => [], "txInc" => false],
-                ["id" => 3, "txName" => "city tax", "txTypeMontant" => 1, "txMontant" => 5, "txFormule" => "BY_NIGHT_AND_PERSON_TAX", "taxe_cumul" => [], "txInc" => false],
+                ["id" => 1, "txName" => "VAT", "txTypeMontant" => 0, "txMontant" => 18, "txFormule" => TaxeDetail::BY_STAY_TAX, "taxe_cumul" => [], "txInc" => true],
+                ["id" => 2, "txName" => "resort fee", "txTypeMontant" => 1, "txMontant" => 25, "txFormule" => TaxeDetail::BY_STAY_TAX, "taxe_cumul" => [], "txInc" => false],
+                ["id" => 3, "txName" => "city tax", "txTypeMontant" => 1, "txMontant" => 5, "txFormule" => TaxeDetail::BY_NIGHT_AND_PERSON_TAX, "taxe_cumul" => [], "txInc" => false],
             ]
         ];
 
@@ -738,8 +863,8 @@ class TaxesServiceV2ExamplesTest extends TestCase
             2,
             5,
             [
-                ["id" => 1, "txName" => "VAT", "txTypeMontant" => 0, "txMontant" => 18, "txFormule" => "BY_STAY_TAX", "taxe_cumul" => [], "txInc" => true],
-                ["id" => 2, "txName" => "city tax", "txTypeMontant" => 1, "txMontant" => 4, "txFormule" => "BY_NIGHT_AND_PERSON_TAX", "taxe_cumul" => [], "txInc" => true],
+                ["id" => 1, "txName" => "VAT", "txTypeMontant" => 0, "txMontant" => 18, "txFormule" => TaxeDetail::BY_STAY_TAX, "taxe_cumul" => [], "txInc" => true],
+                ["id" => 2, "txName" => "city tax", "txTypeMontant" => 1, "txMontant" => 4, "txFormule" => TaxeDetail::BY_NIGHT_AND_PERSON_TAX, "taxe_cumul" => [], "txInc" => true],
             ]
         ];
 
@@ -752,8 +877,8 @@ class TaxesServiceV2ExamplesTest extends TestCase
             2,
             1,
             [
-                ["id" => 1, "txName" => "VAT", "txTypeMontant" => 0, "txMontant" => 6, "txFormule" => "BY_STAY_TAX", "taxe_cumul" => [], "txInc" => true],
-                ["id" => 2, "txName" => "city tax", "txTypeMontant" => 0, "txMontant" => 5, "txFormule" => "BY_STAY_TAX", "taxe_cumul" => [], "txInc" => true],
+                ["id" => 1, "txName" => "VAT", "txTypeMontant" => 0, "txMontant" => 6, "txFormule" => TaxeDetail::BY_STAY_TAX, "taxe_cumul" => [], "txInc" => true],
+                ["id" => 2, "txName" => "city tax", "txTypeMontant" => 0, "txMontant" => 5, "txFormule" => TaxeDetail::BY_STAY_TAX, "taxe_cumul" => [], "txInc" => true],
             ]
         ];
 
@@ -766,8 +891,8 @@ class TaxesServiceV2ExamplesTest extends TestCase
             2,
             1,
             [
-                ["id" => 1, "txName" => "VAT", "txTypeMontant" => 0, "txMontant" => 10, "txFormule" => "BY_STAY_TAX", "taxe_cumul" => [], "txInc" => true],
-                ["id" => 2, "txName" => "governemnt tax", "txTypeMontant" => 0, "txMontant" => 2, "txFormule" => "BY_STAY_TAX", "taxe_cumul" => [], "txInc" => true],
+                ["id" => 1, "txName" => "VAT", "txTypeMontant" => 0, "txMontant" => 10, "txFormule" => TaxeDetail::BY_STAY_TAX, "taxe_cumul" => [], "txInc" => true],
+                ["id" => 2, "txName" => "governemnt tax", "txTypeMontant" => 0, "txMontant" => 2, "txFormule" => TaxeDetail::BY_STAY_TAX, "taxe_cumul" => [], "txInc" => true],
             ]
         ];
 
@@ -780,8 +905,8 @@ class TaxesServiceV2ExamplesTest extends TestCase
             2,
             3,
             [
-                ["id" => 1, "txName" => "VAT", "txTypeMontant" => 0, "txMontant" => 6,  "txFormule" => "BY_STAY_TAX", "taxe_cumul" => [], "txInc" => true],
-                ["id" => 2, "txName" => "city tax", "txTypeMontant" => 0, "txMontant" => 10, "txFormule" => "BY_STAY_TAX", "taxe_cumul" => [], "txInc" => false],
+                ["id" => 1, "txName" => "VAT", "txTypeMontant" => 0, "txMontant" => 6,  "txFormule" => TaxeDetail::BY_STAY_TAX, "taxe_cumul" => [], "txInc" => true],
+                ["id" => 2, "txName" => "city tax", "txTypeMontant" => 0, "txMontant" => 10, "txFormule" => TaxeDetail::BY_STAY_TAX, "taxe_cumul" => [], "txInc" => false],
             ]
         ];
 
@@ -803,7 +928,7 @@ class TaxesServiceV2ExamplesTest extends TestCase
             2,
             1,
             [
-                ["id" => 1, "txName" => "VAT", "txTypeMontant" => 0, "txMontant" => 6, "txFormule" => "BY_STAY_TAX", "taxe_cumul" => [], "txInc" => true],
+                ["id" => 1, "txName" => "VAT", "txTypeMontant" => 0, "txMontant" => 6, "txFormule" => TaxeDetail::BY_STAY_TAX, "taxe_cumul" => [], "txInc" => true],
             ]
         ];
 
@@ -815,8 +940,8 @@ class TaxesServiceV2ExamplesTest extends TestCase
             4,
             3,
             [
-                ["id" => 1, "txName" => "VAT", "txTypeMontant" => 0, "txMontant" => 6,  "txFormule" => "BY_STAY_TAX", "taxe_cumul" => [], "txInc" => false],
-                ["id" => 2, "txName" => "service charge", "txTypeMontant" => 0, "txMontant" => 10, "txFormule" => "BY_STAY_TAX", "taxe_cumul" => [1], "txInc" => false],
+                ["id" => 1, "txName" => "VAT", "txTypeMontant" => 0, "txMontant" => 6,  "txFormule" => TaxeDetail::BY_STAY_TAX, "taxe_cumul" => [], "txInc" => false],
+                ["id" => 2, "txName" => "service charge", "txTypeMontant" => 0, "txMontant" => 10, "txFormule" => TaxeDetail::BY_STAY_TAX, "taxe_cumul" => [1], "txInc" => false],
             ]
         ];
 

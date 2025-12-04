@@ -22,72 +22,23 @@ class TaxesGeneralService
 {
 
     use \Apiunchotel\PriceBreakDown\Traits\SimilarFieldsCopier;
-
-
-    /**
-     * Les taxes a partir de prix HT
-     * @deprecated Utilisez breakdownFromHTv2() à la place
-     *
-     * @param float $priceHt
-     * @param array $taxes
-     * @param integer $nbPerson
-     * @param integer $nbDays
-     * @param array $context
-     * @return Tax
-     */
-    public function getDetailPricesFromPriceHT(float $priceHt, array $taxes, int $nbPerson, int $nbDays, array $context = []): Tax
-    {
-        return $this->breakdownFromHTv2($priceHt, $taxes, $nbPerson, $nbDays, $context);
-    }
-
-    /**
-     * Les taxes a partir de prix de vente
-     * @deprecated Utilisez breakdownFromSalePriceV2() à la place
-     * 
-     * @param float $priceSale
-     * @param array $taxes
-     * @param integer $nbPerson
-     * @param integer $nbDays
-     * @param array $context
-     * @return Tax
-     */
-    public function getDetailPricesFromPriceSale(float $priceSale, array $taxes, int $nbPerson, int $nbDays, array $context = []): Tax
-    {
-        return $this->breakdownFromSalePriceV2($priceSale, $taxes, $nbPerson, $nbDays, $context);
-    }
-
-    /**
-     * Les taxes a partir de prix TTC
-     * @deprecated Utilisez breakdownFromTTCv2() à la place
-     *
-     * @param float $priceTTC
-     * @param array $taxes
-     * @param integer $nbPerson
-     * @param integer $nbDays
-     * @param array $context
-     * @return Tax
-     */
-    public function getDetailPricesFromPriceTTC(float $priceTTC, array $taxes, int $nbPerson, int $nbDays, array $context = []): Tax
-    {
-        return $this->breakdownFromTTCv2($priceTTC, $taxes, $nbPerson, $nbDays, $context);
-    }
-
-
-    public function breakdownFromTTCv2(float $priceTTC, array $taxes, int $persons = 1, int $nights = 1, array $context = []): Tax
+    public function getDetailPricesFromPriceTTC(float $priceTTC, array $taxes, int $persons = 1, int $nights = 1, array $context = []): Tax
     {
         $ht = $this->calculateHTClosedFormV2($priceTTC, $taxes, $persons, $nights, $context);
-        return $this->breakdownFromHTv2($ht, $taxes, $persons, $nights, $context);
+        return $this->getDetailPricesFromPriceHT($ht, $taxes, $persons, $nights, $context);
     }
 
     /**
      * Nouvelle version - Décompose HT → TTC avec cumul des taxes et règles conditionnelles
      */
-    public function breakdownFromHTv2(float $ht, array $taxes, int $persons = 1, int $nights = 1, array $context = []): Tax
+    public function getDetailPricesFromPriceHT(float $ht, array $taxes, int $persons = 1, int $nights = 1, array $context = []): Tax
     {
         [$byId, $order] = $this->topoOrder($taxes);
 
         $amounts = [];
-        $lines   = [];
+        $inc = (int) true;
+        $exc = (int) false;
+        $detailTax = [$inc => [], $exc => []];
         $running = $ht;
         $totalIncluded = $totalExcluded = 0;
 
@@ -114,12 +65,7 @@ class TaxesGeneralService
 
             if (!empty($t['txInc'])) $totalIncluded += $amount;
             else $totalExcluded += $amount;
-
-            $lines[$t['id']] = [
-                'id'     => $t['id'],
-                'txName'   => $t['txName'] ?? '',
-                'txTotalMontant' => $amount,
-            ];
+            $detailTax[(int) $t["txInc"]][$t["txName"]] = $amount;
         }
 
         return (new Tax())
@@ -128,8 +74,20 @@ class TaxesGeneralService
             ->setPriceTTC($running)
             ->setTotalTaxExc($totalExcluded)
             ->setTotalTaxInc($totalIncluded)
-            ->setDetailTax($lines)
+            ->setDetailTax(['inculded' => $detailTax[$inc], 'excluded' => $detailTax[$exc]])
             ->setOriginalTaxes($taxes);
+    }
+
+        /**
+     * Nouvelle méthode - Décompose le prix de vente (HT + taxes incluses)
+     * pour obtenir le même résultat que getDetailPricesFromPriceTTC()
+     */
+    public function getDetailPricesFromPriceSale(float $priceSale, array $taxes, int $persons = 1, int $nights = 1, array $context = []): Tax
+    {
+        // Étape 1 : Calculer le HT à partir du prix de vente (HT + taxes incluses)
+        $ht = $this->calculateHTFromSalePriceV2($priceSale, $taxes, $persons, $nights, $context);
+        // Étape 2 : Reconstituer le breakdown complet (comme pour getDetailPricesFromPriceTTC)
+        return $this->getDetailPricesFromPriceHT($ht, $taxes, $persons, $nights, $context);
     }
 
     // === Fonctions internes V2 ===
@@ -139,7 +97,7 @@ class TaxesGeneralService
         $effective = [
             'txTypeMontant' => $tax['txTypeMontant'],
             'txMontant' => (float)$tax['txMontant'],
-            'txFormule'  => $tax['txTypeMontant'] === 1 ? ($tax['txFormule'] ?? 'BY_STAY_TAX') : null,
+            'txFormule'  => $tax['txTypeMontant'] === 1 ? ($tax['txFormule'] ?? TaxeDetail::BY_STAY_TAX) : null,
         ];
 
         if (!isset($tax['rule']) || !is_array($tax['rule'])) {
@@ -165,14 +123,14 @@ class TaxesGeneralService
     private function fixedAmount(array $tax, int $persons, int $nights): float
     {
         $v = (float)$tax['txMontant'];
-        switch ($tax['txFormule'] ?? 'BY_STAY_TAX') {
-            case 'BY_STAY_TAX':
+        switch ($tax['txFormule'] ?? TaxeDetail::BY_STAY_TAX) {
+            case TaxeDetail::BY_STAY_TAX:
                 return $v;
-            case 'BY_PERSON_TAX':
+            case TaxeDetail::BY_PERSON_TAX:
                 return $v * max(0, $persons);
-            case 'BY_NIGHT_TAX':
+            case TaxeDetail::BY_NIGHT_TAX:
                 return $v * max(0, $nights);
-            case 'BY_NIGHT_AND_PERSON_TAX':
+            case TaxeDetail::BY_NIGHT_AND_PERSON_TAX:
                 return $v * max(0, $persons) * max(0, $nights);
             default:
                 return 0.0;
@@ -212,6 +170,7 @@ class TaxesGeneralService
     private function calculateHTClosedFormV2(float $priceTTC, array $taxes, int $persons, int $nights, array $context = []): float
     {
         $htCandidate = $this->calculateHTGivenBranch($priceTTC, $taxes, $persons, $nights, 'below');
+        
         $avg = ($nights > 0) ? $htCandidate / $nights : 0;
         $branch = $this->determineBranch($taxes, $avg);
         if ($branch === 'below') return $htCandidate;
@@ -276,17 +235,7 @@ class TaxesGeneralService
         return ($priceTTC - $b) / $a;
     }
 
-    /**
-     * Nouvelle méthode - Décompose le prix de vente (HT + taxes incluses)
-     * pour obtenir le même résultat que breakdownFromTTCv2()
-     */
-    public function breakdownFromSalePriceV2(float $priceSale, array $taxes, int $persons = 1, int $nights = 1, array $context = []): Tax
-    {
-        // Étape 1 : Calculer le HT à partir du prix de vente (HT + taxes incluses)
-        $ht = $this->calculateHTFromSalePriceV2($priceSale, $taxes, $persons, $nights, $context);
-        // Étape 2 : Reconstituer le breakdown complet (comme pour breakdownFromTTCv2)
-        return $this->breakdownFromHTv2($ht, $taxes, $persons, $nights, $context);
-    }
+
 
     /**
      * Calcule le prix HT à partir du prix de vente (HT + taxes incluses)
@@ -341,7 +290,7 @@ class TaxesGeneralService
             } else {
                 // 🔹 Remplace fix_unit par txFormule
                 $amount = $this->fixedAmount(
-                    ['txMontant' => $eff['txMontant'], 'txFormule' => $eff['txFormule'] ?? 'BY_STAY_TAX'],
+                    ['txMontant' => $eff['txMontant'], 'txFormule' => $eff['txFormule'] ?? TaxeDetail::BY_STAY_TAX],
                     $persons,
                     $nights
                 );
@@ -363,7 +312,7 @@ class TaxesGeneralService
             return [
                 'txTypeMontant' => $tax['txTypeMontant'],
                 'txMontant' => (float)$tax['txMontant'],
-                'txFormule'  => $tax['txTypeMontant'] === 1 ? ($tax['txFormule'] ?? 'BY_STAY_TAX') : null,
+                'txFormule'  => $tax['txTypeMontant'] === 1 ? ($tax['txFormule'] ?? TaxeDetail::BY_STAY_TAX) : null,
             ];
         }
 
@@ -375,7 +324,7 @@ class TaxesGeneralService
         return [
             'txTypeMontant' => $branch['txTypeMontant'],
             'txMontant' => (float)$branch['txMontant'],
-            'txFormule'  => $branch['txFormule'] ?? ($tax['txFormule'] ?? 'BY_STAY_TAX'),
+            'txFormule'  => $branch['txFormule'] ?? ($tax['txFormule'] ?? TaxeDetail::BY_STAY_TAX),
         ];
     }
 }
