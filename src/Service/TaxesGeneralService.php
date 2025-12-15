@@ -24,10 +24,77 @@ class TaxesGeneralService
     use \Apiunchotel\PriceBreakDown\Traits\SimilarFieldsCopier;
     public function getDetailPricesFromPriceTTC(float $priceTTC, array $taxes, int $persons = 1, int $nights = 1, array $context = []): Tax
     {
+
         $ht = $this->calculateHTClosedFormV2($priceTTC, $taxes, $persons, $nights, $context);
         return $this->getDetailPricesFromPriceHT($ht, $taxes, $persons, $nights, $context);
     }
+    /**
+     * Transforme le format de l'API Booking en format interne utilisable
+     * pour breakdownFromHT / breakdownFromTTC.
+     *
+     * @param array $data La réponse JSON déjà décodée en tableau
+     * @return array Tableau de taxes prêtes à l'emploi
+     */
+public function mapTaxesFromBookingApi(array $data): array
+{
+    // 🔒 Si ce n’est manifestement PAS le format Booking, on ne mappe pas
+    if (empty($data)) {
+        return $data;
+    }
 
+    $first = reset($data);
+
+    // Critère clair et non ambigu
+    if (!is_array($first) || !array_key_exists('txdId', $first)) {
+        return $data;
+    }
+
+    $taxes = [];
+
+    foreach ($data as $t) {
+        $tax = [
+            "id" => $t['txdId'],
+            "txName" => $t['txName'] ?? '',
+            "txTypeMontant" => (int)($t['txTypeMontant'] ?? 0),
+            "txMontant" => (float)($t['txMontant'] ?? 0),
+            "txFormule" => ($t['txTypeMontant'] ?? 0)
+                ? TaxeDetail::BY_STAY_TAX
+                : null,
+            "taxe_cumul" => $t['taxe_cumul'] ?? [],
+            "txInc" => (bool)($t['txInc'] ?? false),
+            "rule" => null,
+        ];
+
+        // Règle dynamique Booking
+        if (
+            !empty($t['txdTaxeRule']) &&
+            $t['txdTaxeRule'] === 'tax_value_change_on_avg_price_per_night' &&
+            !empty($t['txParams'])
+        ) {
+            $params = [];
+            foreach ($t['txParams'] as $p) {
+                $params[$p['Titre']] = $p['Valeur'];
+            }
+
+            $tax['rule'] = [
+                "type" => "tax_value_change_on_avg_price_per_night",
+                "threshold" => (float)($params['Seuil'] ?? 0),
+                "below" => [
+                    "txTypeMontant" => $tax['txTypeMontant'],
+                    "txMontant" => (float)($params['Below'] ?? 0),
+                ],
+                "above" => [
+                    "txTypeMontant" => $tax['txTypeMontant'],
+                    "txMontant" => (float)($params['Above'] ?? 0),
+                ],
+            ];
+        }
+
+        $taxes[] = $tax;
+    }
+
+    return $taxes;
+}
     /**
      * Nouvelle version - Décompose HT → TTC avec cumul des taxes et règles conditionnelles
      */
@@ -140,6 +207,9 @@ class TaxesGeneralService
     private function topoOrder(array $taxes): array
     {
         $byId = [];
+        
+        $taxes = $this->mapTaxesFromBookingApi($taxes);
+
         foreach ($taxes as $t) {
             if (!isset($t['id'], $t['txTypeMontant'], $t['txMontant'])) {
                 throw new \InvalidArgumentException("Tax missing required keys.");
