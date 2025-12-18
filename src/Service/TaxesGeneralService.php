@@ -52,6 +52,18 @@ public function mapTaxesFromBookingApi(array $data): array
     $taxes = [];
 
     foreach ($data as $t) {
+
+
+        // --- taxe_cumul ---
+        $taxeCumul = [];
+
+        if (
+            isset($t['txTypeRule']) && $t['txHasRule']=== true && $t['txTypeRule'] === false && !empty($t['txParams'])
+        ) {
+            // txParams = IDs des taxes cumulées
+            $taxeCumul = array_map('intval', $t['txParams']);
+        }
+        
         $tax = [
             "id" => $t['txdId'],
             "txName" => $t['txName'] ?? '',
@@ -60,7 +72,7 @@ public function mapTaxesFromBookingApi(array $data): array
             "txFormule" => ($t['txTypeMontant'] ?? 0)
                 ? TaxeDetail::BY_STAY_TAX
                 : null,
-            "taxe_cumul" => $t['taxe_cumul'] ?? [],
+            "taxe_cumul" => $taxeCumul,
             "txInc" => (bool)($t['txInc'] ?? false),
             "rule" => null,
         ];
