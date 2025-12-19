@@ -69,9 +69,7 @@ public function mapTaxesFromBookingApi(array $data): array
             "txName" => $t['txName'] ?? '',
             "txTypeMontant" => (int)($t['txTypeMontant'] ?? 0),
             "txMontant" => (float)($t['txMontant'] ?? 0),
-            "txFormule" => ($t['txTypeMontant'] ?? 0)
-                ? TaxeDetail::BY_STAY_TAX
-                : null,
+            "txFormule" => ($t['txFormule'] ?? 0),
             "taxe_cumul" => $taxeCumul,
             "txInc" => (bool)($t['txInc'] ?? false),
             "rule" => null,
