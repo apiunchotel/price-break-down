@@ -151,7 +151,7 @@ public function mapTaxesFromBookingApi(array $data): array
             ->setPriceTTC($running)
             ->setTotalTaxExc($totalExcluded)
             ->setTotalTaxInc($totalIncluded)
-            ->setDetailTax(['inculded' => $detailTax[$inc], 'excluded' => $detailTax[$exc]])
+            ->setDetailTax(['inculded' => $detailTax[$inc],'included' => $detailTax[$inc], 'excluded' => $detailTax[$exc]])
             ->setOriginalTaxes($taxes);
     }
 
